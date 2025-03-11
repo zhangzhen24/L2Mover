@@ -12,6 +12,8 @@
 #include "LogL2Mover.h"
 #include "SequenceEvaluatorLibrary.h"
 #include "SequencePlayerLibrary.h"
+#include "Animation/AnimSubsystem_Tag.h"
+#include "Animation/L2MoverAnimInstanceProxy.h"
 #include "Data/L2MovementDefinition.h"
 #include "Data/L2MovementFragment.h"
 #include "Data/L2MoverMovementEnums.h"
@@ -105,6 +107,15 @@ void UL2MoverAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	IKAlpha = UKismetMathLibrary::FInterpTo(IKAlpha, bEnableFootIK ? 1.f : 0.f, DeltaSeconds, 10.f);
 
 	bFirstUpdate = false;
+}
+
+void UL2MoverAnimInstance::NativePostUpdateAnimation()
+{
+}
+
+FAnimInstanceProxy* UL2MoverAnimInstance::CreateAnimInstanceProxy()
+{
+	return new FL2MoverAnimaInstanceProxy{this};
 }
 
 void UL2MoverAnimInstance::UpdateInWall()
@@ -603,21 +614,31 @@ void UL2MoverAnimInstance::OnBecomeRelevant_SetUpIdleTransition(const FAnimUpdat
 
 void UL2MoverAnimInstance::OnUpdate_UpdateLocomotionStateMachine_Implementation(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
 {
-	bool Result = false;
-	FLinkedAnimGraphReference LinkedAnimGraph;
-
-	//TODO:LayerNode, 查一下cpp代码写法 
-
-	//TODO:这里的Node 本是需要引用 StartLayerNode，我们应该在动画蓝图中重写此函数。
-	ULinkedAnimGraphLibrary::ConvertToLinkedAnimGraphPure(Node, LinkedAnimGraph, Result);
-	UAnimInstance* NewAnimInstance = ULinkedAnimGraphLibrary::GetLinkedAnimInstance(LinkedAnimGraph);
-
-	if (!bFirstUpdate)
+	if (const IAnimClassInterface* AnimBlueprintClass = IAnimClassInterface::GetFromClass(this->GetClass()))
 	{
-		bLinkedLayerChanged = (NewAnimInstance != LastLinkedLayer);
-	}
+		if (const FAnimSubsystem_Tag* TagSubsystem = AnimBlueprintClass->FindSubsystem<FAnimSubsystem_Tag>())
+		{
+			if (FAnimNode_Base* LinkedAnimGraphNode = TagSubsystem->FindNodeByTag<FAnimNode_Base>("Start", this))
+			{
+				//获取Tag Anim Node
+				FAnimNodeReference StartAnimNode(this, *LinkedAnimGraphNode);
 
-	LastLinkedLayer = NewAnimInstance;
+				//根据Node找到AnimGraph引用
+				bool Result = false;
+				FLinkedAnimGraphReference LinkedAnimGraphReference;
+				ULinkedAnimGraphLibrary::ConvertToLinkedAnimGraphPure(StartAnimNode, LinkedAnimGraphReference, Result);
+
+				//获取AnimInstance
+				UAnimInstance* NewAnimInstance = ULinkedAnimGraphLibrary::GetLinkedAnimInstance(LinkedAnimGraphReference);
+				if (!bFirstUpdate)
+				{
+					bLinkedLayerChanged = (NewAnimInstance != LastLinkedLayer);
+				}
+
+				LastLinkedLayer = NewAnimInstance;
+			}
+		}
+	}
 }
 
 void UL2MoverAnimInstance::OnUpdate_UpdateIdleAnim(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)

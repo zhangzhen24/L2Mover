@@ -26,8 +26,6 @@ namespace L2Mover_AnimCurveName
 	static const FName LocomotionDistance = TEXT("Distance");
 }
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FL2Mover_OnUpdateAnimationData);
-
 /**
  * 
  */
@@ -43,18 +41,20 @@ public:
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 	virtual void NativeThreadSafeUpdateAnimation(float DeltaSeconds) override;
+	virtual void NativePostUpdateAnimation();
 
+	virtual FAnimInstanceProxy* CreateAnimInstanceProxy() override;
+	
 	UFUNCTION()
 	void UpdateInWall();
 
-public:
-	UPROPERTY(BlueprintAssignable, Category = "L2Mover")
-	FL2Mover_OnUpdateAnimationData OnUpdateAnimationData;
-
 protected:
 	void Initialization();
+	
 	void InitEvents();
+	
 	void SetAnimationData();
+	
 	void SetGroundDistance();
 
 	UFUNCTION()
@@ -168,7 +168,6 @@ public:
 	UFUNCTION(BlueprintCallable, meta = (AnimBlueprintFunction, BlueprintThreadSafe), Category = "State Node Functions")
 	void OnUpdate_UpdatePivotState(const FAnimUpdateContext& Context, const FAnimNodeReference& Node);
 
-	//TODO: 需要引用 StartLayerNode
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, meta = (AnimBlueprintFunction, BlueprintThreadSafe), Category = "State Node Functions")
 	void OnUpdate_UpdateLocomotionStateMachine(const FAnimUpdateContext& Context, const FAnimNodeReference& Node);
 
