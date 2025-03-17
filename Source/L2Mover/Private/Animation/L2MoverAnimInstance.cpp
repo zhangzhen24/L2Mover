@@ -100,8 +100,7 @@ void UL2MoverAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	UpdateRootYawOffset(DeltaSeconds);
 	UpdateAimData(DeltaSeconds);
 	UpdateJumpFallData(DeltaSeconds);
-	CheckJumpAnimValid(DeltaSeconds);
-	CheckAimOffsetAnimValid(DeltaSeconds);
+	CheckAnimValid(DeltaSeconds);
 
 	//是否开启ControlRig
 	bEnableFootIK = GetCurveValue(L2Mover_AnimCurveName::DisableLegIK) > 0.f;
@@ -202,6 +201,7 @@ void UL2MoverAnimInstance::ResetMovementStateChanged()
 
 void UL2MoverAnimInstance::UpdateLocationData(float DeltaTime)
 {
+	bShouldMove = L2MoverComponent->bShouldMove;
 	//自上次更新以来的位移
 	DisplacementSinceLastUpdate = (OwnerCharacter->GetActorLocation() - WorldLocation).Size2D();
 	//世界位置
@@ -338,18 +338,33 @@ void UL2MoverAnimInstance::UpdateUpperBodyAlpha(float DeltaTime)
 	UpperBodyAlpha = UKismetMathLibrary::FInterpTo(UpperBodyAlpha, TempValue, DeltaTime, 10.f);
 }
 
-void UL2MoverAnimInstance::CheckJumpAnimValid(float DeltaTime)
+void UL2MoverAnimInstance::CheckAnimValid(float DeltaTime)
 {
-	const FL2MovementFragment_Jump& JumpData = GetMovementFragment_Jump();
-	bIsValid_JumpApex = IsValid(JumpData.Jump_Apex);
-	bIsValid_JumpFallLand = IsValid(JumpData.Jump_FallLand);
-	bIsValid_JumpStartLoop = IsValid(JumpData.Jump_StartLoop);
-}
+	const FL2MovementFragment_Idle& IdleData = GetMovementFragment_Idle();
+	bIsAnimValid_Idle = IdleData.IsAnimValid();
 
-void UL2MoverAnimInstance::CheckAimOffsetAnimValid(float DeltaTime)
-{
+	const FL2MovementFragment_Start& StartData = GetMovementFragment_Start();
+	bIsAnimValid_Start = StartData.IsAnimValid();
+
+	const FL2MovementFragment_Start_4Way& StartData_4Way = GetMovementFragment_StartForwardFacing();
+	bIsAnimValid_StartForwardFacing = StartData_4Way.IsAnimValid();
+
+	const FL2MovementFragment_Cycle& CycleData = GetMovementFragment_Cycle();
+	bIsAnimValid_Cycle = CycleData.IsAnimValid();
+
+	const FL2MovementFragment_Stop& StopData = GetMovementFragment_Stop();
+	bIsAnimValid_Stop = StopData.IsAnimValid();
+
+	const FL2MovementFragment_Pivot& PivotData = GetMovementFragment_Pivot();
+	bIsAnimValid_Pivot = PivotData.IsAnimValid();
+
+	const FL2MovementFragment_Jump& JumpData = GetMovementFragment_Jump();
+	bIsAnimValid_JumpApex = IsValid(JumpData.Jump_Apex);
+	bIsAnimValid_JumpFallLand = IsValid(JumpData.Jump_FallLand);
+	bIsAnimValid_JumpStartLoop = IsValid(JumpData.Jump_StartLoop);
+
 	const FL2MovementFragment_AimOffset& AimOffsetData = GetMovementFragment_AimOffset();
-	bIsValid_AimOffset = IsValid(AimOffsetData.AimOffset);
+	bIsAnimValid_AimOffset = IsValid(AimOffsetData.AimOffset);
 }
 
 bool UL2MoverAnimInstance::IsMovingPerpendicularToInitialPivot() const
@@ -711,31 +726,23 @@ void UL2MoverAnimInstance::OnUpdate_UpdateStartAnim(const FAnimUpdateContext& Co
 	USequenceEvaluatorLibrary::ConvertToSequenceEvaluatorPure(Node, SequenceEvaluator, bResult);
 	if (bResult)
 	{
-		const FL2MovementFragment_Start& StartData = GetMovementFragment_Start();
-		const FL2MovementFragment_Sprint& SprintData = GetMovementFragment_Sprint();
-		if (StartData.IsAnimValid() && SprintData.IsAnimValid())
-		{
-			const float ExplicitTime = USequenceEvaluatorLibrary::GetAccumulatedTime(SequenceEvaluator);
+		const float ExplicitTime = USequenceEvaluatorLibrary::GetAccumulatedTime(SequenceEvaluator);
 
-			//Alpha = (ExplicitTime - Offset) / Duration
-			StrideWarpingStartAlpha = FMath::GetMappedRangeValueClamped(FVector2D{0.f, StrideWarpingBlendInDurationScaled},
-			                                                            FVector2D{0.f, 1.f},
-			                                                            ExplicitTime - StrideWarpingBlendInStartOffset);
+		//Alpha = (ExplicitTime - Offset) / Duration
+		StrideWarpingStartAlpha = FMath::GetMappedRangeValueClamped(FVector2D{0.f, StrideWarpingBlendInDurationScaled},
+		                                                            FVector2D{0.f, 1.f},
+		                                                            ExplicitTime - StrideWarpingBlendInStartOffset);
 
-			FVector2D PlayRateClamp_Start = GetPlayRateClampStart();
+		FVector2D PlayRateClamp_Start = GetPlayRateClampStart();
+		//播放速率限制. 平滑地增加最小播放速率速度，因为我们混合了跨步扭曲
+		PlayRateClamp_Start.X = FMath::Lerp(StrideWarpingBlendInDurationScaled, PlayRateClamp_Start.X, StrideWarpingStartAlpha);
+		const FVector2D LocalPlayRateClamp = FVector2D(PlayRateClamp_Start.X, PlayRateClamp_Start.Y);
 
-			//播放速率限制
-			//平滑地增加最小播放速率速度，因为我们混合了跨步扭曲
-			FVector2D LocalPlayRateClamp = FVector2D(
-				FMath::Lerp(StrideWarpingBlendInDurationScaled, PlayRateClamp_Start.X, StrideWarpingStartAlpha),
-				PlayRateClamp_Start.Y);
-
-			//距离匹配
-			UAnimDistanceMatchingLibrary::AdvanceTimeByDistanceMatching(Context, SequenceEvaluator,
-			                                                            DisplacementSinceLastUpdate,
-			                                                            L2Mover_AnimCurveName::LocomotionDistance,
-			                                                            LocalPlayRateClamp);
-		}
+		//距离匹配
+		UAnimDistanceMatchingLibrary::AdvanceTimeByDistanceMatching(Context, SequenceEvaluator,
+		                                                            DisplacementSinceLastUpdate,
+		                                                            L2Mover_AnimCurveName::LocomotionDistance,
+		                                                            LocalPlayRateClamp);
 	}
 }
 
@@ -755,17 +762,12 @@ void UL2MoverAnimInstance::OnUpdate_UpdateCycleAnim(const FAnimUpdateContext& Co
 		USequencePlayerLibrary::SetSequenceWithInertialBlending(Context, SequencePlayer, TempAnim, 0.25f);
 
 		//更新步幅匹配速率
-		const FL2MovementFragment_Cycle& CycleData = GetMovementFragment_Cycle();
-		const FL2MovementFragment_Sprint& SprintData = GetMovementFragment_Sprint();
-		if (CycleData.IsAnimValid() && SprintData.IsAnimValid())
-		{
-			FVector2D PlayRateClamp_Cycle = GetPlayRateClampCycle();
-			UAnimDistanceMatchingLibrary::SetPlayrateToMatchSpeed(SequencePlayer, DisplacementSpeed, PlayRateClamp_Cycle);
-			StrideWarpingCycleAlpha = UKismetMathLibrary::FInterpTo(StrideWarpingCycleAlpha,
-			                                                        bIsRunningIntoWall ? 0.5f : 1.f,
-			                                                        UAnimExecutionContextLibrary::GetDeltaTime(Context),
-			                                                        10.f);
-		}
+		FVector2D PlayRateClamp_Cycle = GetPlayRateClampCycle();
+		UAnimDistanceMatchingLibrary::SetPlayrateToMatchSpeed(SequencePlayer, DisplacementSpeed, PlayRateClamp_Cycle);
+		StrideWarpingCycleAlpha = UKismetMathLibrary::FInterpTo(StrideWarpingCycleAlpha,
+		                                                        bIsRunningIntoWall ? 0.5f : 1.f,
+		                                                        UAnimExecutionContextLibrary::GetDeltaTime(Context),
+		                                                        10.f);
 	}
 }
 
@@ -834,16 +836,12 @@ void UL2MoverAnimInstance::OnBecomeRelevant_SetUpPivotAnim(const FAnimUpdateCont
 		PivotStartingAcceleration = LocalAcceleration2D;
 
 		//折返动画
-		const FL2MovementFragment_Pivot& PivotData = GetMovementFragment_Pivot();
-		if (PivotData.IsAnimValid())
-		{
-			UAnimSequenceBase* PivotAnim = GetPivotAnim();
-			USequenceEvaluatorLibrary::SetSequence(SequenceEvaluator, PivotAnim);
-			USequenceEvaluatorLibrary::SetExplicitTime(SequenceEvaluator, 0.f); //设置动画播放起点
-			StrideWarpingPivotAlpha = 0.f; //折返运动 步幅匹配 权重
-			TimeAtPivotStop = 0.f; //折返停止时间
-			LastPivotTime = 0.2f; //上一次折返时间
-		}
+		UAnimSequenceBase* PivotAnim = GetPivotAnim();
+		USequenceEvaluatorLibrary::SetSequence(SequenceEvaluator, PivotAnim);
+		USequenceEvaluatorLibrary::SetExplicitTime(SequenceEvaluator, 0.f); //设置动画播放起点
+		StrideWarpingPivotAlpha = 0.f; //折返运动 步幅匹配 权重
+		TimeAtPivotStop = 0.f; //折返停止时间
+		LastPivotTime = 0.2f; //上一次折返时间
 	}
 }
 
@@ -884,23 +882,18 @@ void UL2MoverAnimInstance::OnUpdate_UpdatePivotAnim(const FAnimUpdateContext& Co
 		}
 		else
 		{
-			const FL2MovementFragment_Pivot& PivotData = GetMovementFragment_Pivot();
-			if (PivotData.IsAnimValid())
-			{
-				//更新步幅匹配折返权重
-				StrideWarpingPivotAlpha = UKismetMathLibrary::MapRangeClamped(ExplicitTime - TimeAtPivotStop - StrideWarpingBlendInStartOffset,
-				                                                              0.f, StrideWarpingBlendInDurationScaled,
-				                                                              0.f, 1.f);
-
-				FVector2D PlayRateClampPivots = PivotData.PlayRateClamp;
-				//一旦加速度和速度对齐，角色就会加速远离枢轴点，因此我们只需按动画其余部分所行进的距离提前时间				
-				//当我们融入步幅适配时，平滑地提高最低播放速度
-				FVector2D NewPlayRateClamp = FVector2D(FMath::Lerp(0.2f, PlayRateClampPivots.X, StrideWarpingPivotAlpha),
-				                                       PlayRateClampPivots.Y);
-				UAnimDistanceMatchingLibrary::AdvanceTimeByDistanceMatching(Context, SequenceEvaluator,
-				                                                            DisplacementSinceLastUpdate,
-				                                                            L2Mover_AnimCurveName::LocomotionDistance, NewPlayRateClamp);
-			}
+			//更新步幅匹配折返权重
+			StrideWarpingPivotAlpha = UKismetMathLibrary::MapRangeClamped(ExplicitTime - TimeAtPivotStop - StrideWarpingBlendInStartOffset,
+			                                                              0.f, StrideWarpingBlendInDurationScaled,
+			                                                              0.f, 1.f);
+			const FVector2D PlayRateClampPivots = GetPlayRateClampPivot();
+			//一旦加速度和速度对齐，角色就会加速远离枢轴点，因此我们只需按动画其余部分所行进的距离提前时间				
+			//当我们融入步幅适配时，平滑地提高最低播放速度
+			const FVector2D NewPlayRateClamp = FVector2D(FMath::Lerp(0.2f, PlayRateClampPivots.X, StrideWarpingPivotAlpha),
+			                                             PlayRateClampPivots.Y);
+			UAnimDistanceMatchingLibrary::AdvanceTimeByDistanceMatching(Context, SequenceEvaluator,
+			                                                            DisplacementSinceLastUpdate,
+			                                                            L2Mover_AnimCurveName::LocomotionDistance, NewPlayRateClamp);
 		}
 	}
 }
@@ -1302,43 +1295,78 @@ FVector2D UL2MoverAnimInstance::GetPlayRateClampStart() const
 {
 	const FL2MovementFragment_Start& StartData = GetMovementFragment_Start();
 	const FL2MovementFragment_Sprint& SprintData = GetMovementFragment_Sprint();
-	if (StartData.IsAnimValid() && SprintData.IsAnimValid())
+
+	FVector2D Result;
+	if (bIsSprinting && SprintData.IsAnimValid())
 	{
-		return bIsSprinting ? SprintData.PlayRateClamp : StartData.PlayRateClamp;
+		Result = SprintData.PlayRateClamp;
+	}
+	else if (StartData.IsAnimValid())
+	{
+		Result = StartData.PlayRateClamp;
+	}
+	else
+	{
+		Result = FVector2D(0.8f, 5.f);
 	}
 
-	return FVector2D(0.8f, 5.f);
+	return Result;
 }
 
 FVector2D UL2MoverAnimInstance::GetPlayRateClampCycle() const
 {
 	const FL2MovementFragment_Cycle& CycleData = GetMovementFragment_Cycle();
 	const FL2MovementFragment_Sprint& SprintData = GetMovementFragment_Sprint();
-	if (CycleData.IsAnimValid() && SprintData.IsAnimValid())
+
+	FVector2D Result;
+	if (bIsSprinting && SprintData.IsAnimValid())
 	{
-		return bIsSprinting ? SprintData.PlayRateClamp : CycleData.PlayRateClamp;
+		Result = SprintData.PlayRateClamp;
+	}
+	else if (CycleData.IsAnimValid())
+	{
+		Result = CycleData.PlayRateClamp;
+	}
+	else
+	{
+		Result = FVector2D(0.8f, 3.f);
 	}
 
-	return FVector2D(0.8f, 3.f);
+	return Result;
 }
 
 FVector2D UL2MoverAnimInstance::GetPlayRateStopCycle() const
 {
 	const FL2MovementFragment_Stop& StopData = GetMovementFragment_Stop();
+	FVector2D Result;
 	if (StopData.IsAnimValid())
 	{
-		return StopData.PlayRateClamp;
+		Result = StopData.PlayRateClamp;
 	}
-	return FVector2D(0.8f, 3.f);
+	else
+	{
+		Result = FVector2D(0.8f, 3.f);
+	}
+	return Result;
 }
 
 FVector2D UL2MoverAnimInstance::GetPlayRateClampPivot() const
 {
 	const FL2MovementFragment_Pivot& PivotData = GetMovementFragment_Pivot();
 	const FL2MovementFragment_Sprint& SprintData = GetMovementFragment_Sprint();
-	if (PivotData.IsAnimValid() && SprintData.IsAnimValid())
+	FVector2D Result;
+	if (bIsSprinting && SprintData.IsAnimValid())
 	{
-		return bIsSprinting ? SprintData.PlayRateClamp : PivotData.PlayRateClamp;
+		Result = SprintData.PlayRateClamp;
 	}
-	return FVector2D(0.8f, 3.f);
+	else if (PivotData.IsAnimValid())
+	{
+		Result = PivotData.PlayRateClamp;
+	}
+	else
+	{
+		Result = FVector2D(0.8f, 3.f);
+	}
+
+	return Result;
 }

@@ -6,6 +6,7 @@
 #include "GameplayTagContainer.h"
 #include "L2MoverGameplayTags.h"
 #include "Animation/AnimInstance.h"
+#include "Data/L2MovementFragment.h"
 #include "Data/L2MoverMovementEnums.h"
 #include "L2MoverAnimInstance.generated.h"
 
@@ -13,7 +14,6 @@
 class ACharacter;
 class UCharacterMovementComponent;
 class UL2MoverComponent;
-enum class EL2MovementDirection : uint8;
 
 
 namespace L2Mover_AnimCurveName
@@ -39,20 +39,21 @@ public:
 
 	virtual void NativeBeginPlay() override;
 	virtual void NativeInitializeAnimation() override;
-	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
-	virtual void NativeThreadSafeUpdateAnimation(float DeltaSeconds) override;
 	virtual void NativePostUpdateAnimation();
 
 	virtual FAnimInstanceProxy* CreateAnimInstanceProxy() override;
 	
+
 	UFUNCTION()
+	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
+	virtual void NativeThreadSafeUpdateAnimation(float DeltaSeconds) override;
 	void UpdateInWall();
 
 protected:
 	void Initialization();
-	
+
 	void SetAnimationData();
-	
+
 	void SetGroundDistance();
 
 	UFUNCTION()
@@ -99,8 +100,7 @@ protected:
 	void UpdateJumpFallData(float DeltaTime);
 	void UpdateWallDetectionHeuristic(float DeltaTime);
 	void UpdateUpperBodyAlpha(float DeltaTime);
-	void CheckJumpAnimValid(float DeltaTime);
-	void CheckAimOffsetAnimValid(float DeltaTime);
+	void CheckAnimValid(float DeltaTime);
 
 protected:
 	UPROPERTY(BlueprintReadOnly, meta=(BlueprintThreadSafe))
@@ -353,6 +353,9 @@ public:
 	//Location Data
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (BlueprintThreadSafe), Category = "Location Data")
+	bool bShouldMove = false;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (BlueprintThreadSafe), Category = "Location Data")
 	FVector WorldLocation = FVector(0);
 
 	//自上次更新以来的位移
@@ -531,17 +534,35 @@ public:
 
 	//Check Anim Valid
 public:
-	UPROPERTY(BlueprintReadWrite, meta = (BlueprintThreadSafe), Category = "Jump Data")
-	bool bIsValid_JumpApex = false;
+	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Check Anim Valid")
+	bool bIsAnimValid_Idle = false;
 
-	UPROPERTY(BlueprintReadWrite, meta = (BlueprintThreadSafe), Category = "Jump Data")
-	bool bIsValid_JumpFallLand = false;
+	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Check Anim Valid")
+	bool bIsAnimValid_Start = false;
 
-	UPROPERTY(BlueprintReadWrite, meta = (BlueprintThreadSafe), Category = "Jump Data")
-	bool bIsValid_JumpStartLoop = false;
+	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Check Anim Valid")
+	bool bIsAnimValid_StartForwardFacing = false;
 
-	UPROPERTY(BlueprintReadWrite, meta = (BlueprintThreadSafe), Category = "Jump Data")
-	bool bIsValid_AimOffset = false;
+	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Check Anim Valid")
+	bool bIsAnimValid_Cycle = false;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Check Anim Valid")
+	bool bIsAnimValid_Stop = false;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Check Anim Valid")
+	bool bIsAnimValid_Pivot = false;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Check Anim Valid")
+	bool bIsAnimValid_JumpApex = false;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Check Anim Valid")
+	bool bIsAnimValid_JumpFallLand = false;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Check Anim Valid")
+	bool bIsAnimValid_JumpStartLoop = false;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Check Anim Valid")
+	bool bIsAnimValid_AimOffset = false;
 
 
 	//Idle Breaks

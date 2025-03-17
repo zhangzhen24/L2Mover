@@ -42,6 +42,16 @@ void UL2MoverLinkedAnimInstance::NativeBeginPlay()
 	Super::NativeBeginPlay();
 }
 
+UL2MoverAnimInstance* UL2MoverLinkedAnimInstance::GetParent()
+{
+	return Parent.Get();
+}
+
+ACharacter* UL2MoverLinkedAnimInstance::GetCharacter()
+{
+	return Character;
+}
+
 FAnimInstanceProxy* UL2MoverLinkedAnimInstance::CreateAnimInstanceProxy()
 {
 	return new FL2MoverAnimaInstanceProxy{this};

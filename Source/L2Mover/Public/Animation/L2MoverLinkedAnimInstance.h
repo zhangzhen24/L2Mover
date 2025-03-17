@@ -14,18 +14,23 @@ class L2MOVER_API UL2MoverLinkedAnimInstance : public UAnimInstance
 	GENERATED_BODY()
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State", meta = (BlueprintThreadSafe), Transient)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State", Transient)
 	TWeakObjectPtr<UL2MoverAnimInstance> Parent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State", meta = (BlueprintThreadSafe), Transient)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State", Transient)
 	TObjectPtr<ACharacter> Character;
 
 public:
 	UL2MoverLinkedAnimInstance();
 
 	virtual void NativeInitializeAnimation() override;
-
 	virtual void NativeBeginPlay() override;
+
+	UFUNCTION(BlueprintPure, Category = "State", meta = (BlueprintThreadSafe))
+	UL2MoverAnimInstance* GetParent();
+
+	UFUNCTION(BlueprintPure, Category = "State", meta = (BlueprintThreadSafe))
+	ACharacter* GetCharacter();
 
 protected:
 	virtual FAnimInstanceProxy* CreateAnimInstanceProxy() override;
