@@ -80,7 +80,6 @@ protected:
 	void MovementInit();
 
 public:
-	/** 获取当前的运动定义 */
 	FORCEINLINE UL2MovementDefinition* GetCurrentMovementDefinition() const;
 	FORCEINLINE bool IsShouldMove() const;
 	FORCEINLINE bool IsOnGround() const;
@@ -88,10 +87,15 @@ public:
 	FORCEINLINE bool IsFalling() const;
 	FORCEINLINE bool IsSprinting() const;
 	FORCEINLINE bool IsAiming() const;
+	FORCEINLINE FGameplayTag GetMovementSetName() const;
 	FORCEINLINE FGameplayTag GetGait() const;
 	FORCEINLINE FGameplayTag GetRotationMode() const;
 
 	const FCharacterGroundInfo& GetGroundInfo();
+
+	// 更新当前使用的运动定义
+	UFUNCTION(BlueprintCallable, Category = "L2Mover")
+	void SetCurrentMovementDefinition(UL2MovementDefinition* InMovementDefinition);
 
 	UFUNCTION(BlueprintCallable, Category = "L2Mover")
 	void UpdateOrientRotationToMovement() const;
@@ -130,25 +134,13 @@ protected:
 	void OnGaitChanged(const FGameplayTag& InGait);
 
 public:
-	// 默认运动类型
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover")
-	FGameplayTag DefaultMovementType = L2MoverMovementType::Unarmed;
-
-	// 当前运动类型
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "L2Mover")
-	FGameplayTag MovementType = FGameplayTag::EmptyTag;
-
-	// 期望的旋转模式
+	//移动预设
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
-	FGameplayTag DesiredRotationMode = L2MoverRotationMode::VelocityDirection;
+	TObjectPtr<UL2MovementDefinition> MovementDefinition;
 
-	// 当前旋转模式
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "L2Mover")
-	FGameplayTag RotationMode = L2MoverRotationMode::VelocityDirection;
-
-	// 扩展姿势
+	//所需的移动类型
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
-	FGameplayTag ExtendedPose = L2MoverExtendedPose::Normal;
+	FGameplayTag MovementSet = L2MoverMovementSet::Unarmed;
 
 	// 期望的步态
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
@@ -156,14 +148,19 @@ public:
 
 	// 当前步态
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "L2Mover")
-	FGameplayTag Gait = L2MoverGait::Running;
+	FGameplayTag Gait = FGameplayTag::EmptyTag;
 
-	// 当前运动定义
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "L2Mover")
-	TObjectPtr<UL2MovementDefinition> MovementDefinition;
+	// 期望的旋转模式
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
+	FGameplayTag DesiredRotationMode = L2MoverRotationMode::VelocityDirection;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "L2Mover")
-	bool bMovementDefinitionChanged = false;
+	// 当前旋转模式
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "L2Mover")
+	FGameplayTag RotationMode = FGameplayTag::EmptyTag;
+
+	// 扩展姿势
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
+	FGameplayTag ExtendedPose = FGameplayTag::EmptyTag;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "L2Mover")
@@ -209,6 +206,5 @@ protected:
 	FCharacterGroundInfo GroundInfo;
 
 private:
-	// 更新当前使用的运动定义
-	void UpdateCurrentMovementDefinition_Internal(UL2MovementDefinition* InMovementDefinition);
+	uint8 bInitialized : 1 = false;
 };

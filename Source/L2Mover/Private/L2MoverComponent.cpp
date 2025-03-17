@@ -1,6 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "L2MoverComponent.h"
+
 #include "Components/CapsuleComponent.h"
 #include "Data/L2MovementDefinition.h"
 #include "GameFramework/Character.h"
@@ -36,9 +37,12 @@ void UL2MoverComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	UpdateLocomotionData(DeltaTime);
-	UpdateGait(DeltaTime);
-	UpdateRotationMode(DeltaTime);
+	if (bInitialized)
+	{
+		UpdateLocomotionData(DeltaTime);
+		UpdateGait(DeltaTime);
+		UpdateRotationMode(DeltaTime);
+	}
 }
 
 void UL2MoverComponent::MovementInit()
@@ -63,7 +67,7 @@ void UL2MoverComponent::MovementInit()
 
 	OwnerCharacter->LandedDelegate.AddUniqueDynamic(this, &ThisClass::OnLanded);
 
-	OnUpdateGait.AddUniqueDynamic(this, &ThisClass::OnGaitChanged);
+	OnUpdateGait.AddDynamic(this, &ThisClass::OnGaitChanged);
 
 	// 设置步态
 	SetGait(DesiredGait);
@@ -73,6 +77,8 @@ void UL2MoverComponent::MovementInit()
 
 	// 设置JumpingSettings
 	UpdateJumpingSettings();
+
+	bInitialized = true;
 }
 
 void UL2MoverComponent::OnLanded(const FHitResult& Hit)
@@ -82,7 +88,6 @@ void UL2MoverComponent::OnLanded(const FHitResult& Hit)
 
 void UL2MoverComponent::OnGaitChanged(const FGameplayTag& InGait)
 {
-	// 设置LocomotionSpeed(步态设置)
 	UpdateGaitSpeedToMovement();
 }
 
@@ -118,7 +123,10 @@ void UL2MoverComponent::UpdateRotationMode(float DeltaTime)
 	if (DesiredRotationMode != RotationMode)
 	{
 		RotationMode = DesiredRotationMode;
+		RotationMode = IsAiming() ? L2MoverRotationMode::LookingDirection : DesiredRotationMode;
 		OnUpdateRotationMode.Broadcast(RotationMode);
+
+		UpdateOrientRotationToMovement();
 	}
 }
 
@@ -155,6 +163,11 @@ inline bool UL2MoverComponent::IsSprinting() const
 inline bool UL2MoverComponent::IsAiming() const
 {
 	return ExtendedPose == L2MoverExtendedPose::Aiming;
+}
+
+FGameplayTag UL2MoverComponent::GetMovementSetName() const
+{
+	return MovementSet;
 }
 
 const FCharacterGroundInfo& UL2MoverComponent::GetGroundInfo()
@@ -231,13 +244,7 @@ inline void UL2MoverComponent::SetGait(FGameplayTag InGait)
 
 inline void UL2MoverComponent::SetRotationMode(FGameplayTag InRotationMode)
 {
-	// 设置旋转模式
 	DesiredRotationMode = InRotationMode;
-	RotationMode = IsAiming() ? L2MoverRotationMode::LookingDirection : DesiredRotationMode;
-	OnUpdateRotationMode.Broadcast(RotationMode);
-
-	// 更新OrientRotationToMovement
-	UpdateOrientRotationToMovement();
 }
 
 inline void UL2MoverComponent::SetSprinting(bool bInIsSprinting)
@@ -270,7 +277,6 @@ void UL2MoverComponent::UpdateGaitSpeedToMovement() const
 
 void UL2MoverComponent::UpdateJumpingSettings() const
 {
-	// 设置运动的步态速度
 	if (CharacterMovement && IsValid(GetCurrentMovementDefinition()))
 	{
 		const FL2MoverInAirSettings& InAirSettings = GetCurrentMovementDefinition()->InAirSettings;
@@ -284,7 +290,7 @@ void UL2MoverComponent::UpdateJumpingSettings() const
 	}
 }
 
-void UL2MoverComponent::UpdateCurrentMovementDefinition_Internal(UL2MovementDefinition* InMovementDefinition)
+void UL2MoverComponent::SetCurrentMovementDefinition(UL2MovementDefinition* InMovementDefinition)
 {
 	if (InMovementDefinition != MovementDefinition)
 	{

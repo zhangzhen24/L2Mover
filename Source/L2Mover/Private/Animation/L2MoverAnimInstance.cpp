@@ -86,6 +86,7 @@ void UL2MoverAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 
 
 	//Character State
+	MovementSetName = L2MoverComponent->GetMovementSetName();
 	Gait = L2MoverComponent->GetGait();
 	RotationMode = L2MoverComponent->GetRotationMode();
 
@@ -154,17 +155,12 @@ void UL2MoverAnimInstance::Initialization()
 
 			OwnerCharacter->MovementModeChangedDelegate.AddUniqueDynamic(this, &ThisClass::OnMovementModeChanged);
 
-			InitEvents();
+			OnAccelerationChanged(bHasAcceleration, LocalVelocityDirectionAngleWithOffset);
+			OnUpdateRotationMode(L2MoverComponent->RotationMode);
+			OnUpdateMovementDefinition(L2MoverComponent->GetCurrentMovementDefinition());
+			OnUpdateRootYawOffsetStatus(bEnableRootYawOffset);
 		}
 	}
-}
-
-void UL2MoverAnimInstance::InitEvents()
-{
-	OnAccelerationChanged(bHasAcceleration, LocalVelocityDirectionAngleWithOffset);
-	OnUpdateRotationMode(L2MoverComponent->RotationMode);
-	OnUpdateMovementDefinition(L2MoverComponent->GetCurrentMovementDefinition());
-	OnUpdateRootYawOffsetStatus(bEnableRootYawOffset);
 }
 
 void UL2MoverAnimInstance::SetAnimationData()
@@ -1080,127 +1076,126 @@ UL2MovementDefinition* UL2MoverAnimInstance::GetCurrentMovementDefinition() cons
 	return MovementDefinition;
 }
 
-FL2MovementFragment_Idle UL2MoverAnimInstance::GetMovementFragment_Idle() const
+FL2MovementFragment_Movement* UL2MoverAnimInstance::GetCurrentMovementSet() const
 {
 	UL2MovementDefinition* MovementDefinition = GetCurrentMovementDefinition();
 	if (!IsValid(MovementDefinition))
+	{
+		return nullptr;
+	}
+
+	return MovementDefinition->FindMovementSet(MovementSetName);
+}
+
+FL2MovementFragment_Idle UL2MoverAnimInstance::GetMovementFragment_Idle() const
+{
+	const FL2MovementFragment_Movement* MovementSet = GetCurrentMovementSet();
+	if (!MovementSet || !MovementSet->Idle.IsValid())
 	{
 		FL2MovementFragment_Idle Idle;
 		return Idle;
 	}
 
-	const FL2MovementFragment_Movement& MovementSet = MovementDefinition->MovementSet;
-	return MovementSet.Idle.Get<FL2MovementFragment_Idle>();
+	return MovementSet->Idle.Get<FL2MovementFragment_Idle>();
 }
 
 FL2MovementFragment_Start UL2MoverAnimInstance::GetMovementFragment_Start() const
 {
-	UL2MovementDefinition* MovementDefinition = GetCurrentMovementDefinition();
-	if (!IsValid(MovementDefinition))
+	const FL2MovementFragment_Movement* MovementSet = GetCurrentMovementSet();
+	if (!MovementSet || !MovementSet->Start.IsValid())
 	{
 		FL2MovementFragment_Start Start;
 		return Start;
 	}
-
-	const FL2MovementFragment_Movement& MovementSet = MovementDefinition->MovementSet;
-	return MovementSet.Start.Get<FL2MovementFragment_Start>();
+	return MovementSet->Start.Get<FL2MovementFragment_Start>();
 }
 
 FL2MovementFragment_Start_4Way UL2MoverAnimInstance::GetMovementFragment_StartForwardFacing() const
 {
-	UL2MovementDefinition* MovementDefinition = GetCurrentMovementDefinition();
-	if (!IsValid(MovementDefinition))
+	const FL2MovementFragment_Movement* MovementSet = GetCurrentMovementSet();
+	if (!MovementSet || !MovementSet->StartForwardFacing.IsValid())
 	{
 		FL2MovementFragment_Start_4Way StartForwardFacing;
 		return StartForwardFacing;
 	}
-
-	const FL2MovementFragment_Movement& MovementSet = MovementDefinition->MovementSet;
-	return MovementSet.StartForwardFacing.Get<FL2MovementFragment_Start_4Way>();
+	return MovementSet->StartForwardFacing.Get<FL2MovementFragment_Start_4Way>();
 }
 
 FL2MovementFragment_Cycle UL2MoverAnimInstance::GetMovementFragment_Cycle() const
 {
-	UL2MovementDefinition* MovementDefinition = GetCurrentMovementDefinition();
-	if (!IsValid(MovementDefinition))
+	const FL2MovementFragment_Movement* MovementSet = GetCurrentMovementSet();
+	if (!MovementSet || !MovementSet->Cycle.IsValid())
 	{
 		FL2MovementFragment_Cycle Cycle;
 		return Cycle;
 	}
-	const FL2MovementFragment_Movement& MovementSet = MovementDefinition->MovementSet;
-	return MovementSet.Cycle.Get<FL2MovementFragment_Cycle>();
+	return MovementSet->Cycle.Get<FL2MovementFragment_Cycle>();
 }
 
 FL2MovementFragment_Stop UL2MoverAnimInstance::GetMovementFragment_Stop() const
 {
-	UL2MovementDefinition* MovementDefinition = GetCurrentMovementDefinition();
-	if (!IsValid(MovementDefinition))
+	const FL2MovementFragment_Movement* MovementSet = GetCurrentMovementSet();
+	if (!MovementSet || !MovementSet->Stop.IsValid())
 	{
 		FL2MovementFragment_Stop Stop;
 		return Stop;
 	}
-	const FL2MovementFragment_Movement& MovementSet = MovementDefinition->MovementSet;
-	return MovementSet.Stop.Get<FL2MovementFragment_Stop>();
+	return MovementSet->Stop.Get<FL2MovementFragment_Stop>();
 }
 
 FL2MovementFragment_Sprint UL2MoverAnimInstance::GetMovementFragment_Sprint() const
 {
-	UL2MovementDefinition* MovementDefinition = GetCurrentMovementDefinition();
-	if (!IsValid(MovementDefinition))
+	const FL2MovementFragment_Movement* MovementSet = GetCurrentMovementSet();
+	if (!MovementSet || !MovementSet->Sprint.IsValid())
 	{
 		FL2MovementFragment_Sprint Sprint;
 		return Sprint;
 	}
-	const FL2MovementFragment_Movement& MovementSet = MovementDefinition->MovementSet;
-	return MovementSet.Sprint.Get<FL2MovementFragment_Sprint>();
+	return MovementSet->Sprint.Get<FL2MovementFragment_Sprint>();
 }
 
 FL2MovementFragment_Pivot UL2MoverAnimInstance::GetMovementFragment_Pivot() const
 {
-	UL2MovementDefinition* MovementDefinition = GetCurrentMovementDefinition();
-	if (!IsValid(MovementDefinition))
+	const FL2MovementFragment_Movement* MovementSet = GetCurrentMovementSet();
+	if (!MovementSet || !MovementSet->Pivot.IsValid())
 	{
 		FL2MovementFragment_Pivot Pivot;
 		return Pivot;
 	}
-	const FL2MovementFragment_Movement& MovementSet = MovementDefinition->MovementSet;
-	return MovementSet.Pivot.Get<FL2MovementFragment_Pivot>();
+	return MovementSet->Pivot.Get<FL2MovementFragment_Pivot>();
 }
 
 FL2MovementFragment_TurnInPlace UL2MoverAnimInstance::GetMovementFragment_TurnInPlace() const
 {
-	UL2MovementDefinition* MovementDefinition = GetCurrentMovementDefinition();
-	if (!IsValid(MovementDefinition))
+	const FL2MovementFragment_Movement* MovementSet = GetCurrentMovementSet();
+	if (!MovementSet || !MovementSet->TurnInPlace.IsValid())
 	{
 		FL2MovementFragment_TurnInPlace TurnInPlace;
 		return TurnInPlace;
 	}
-	const FL2MovementFragment_Movement& MovementSet = MovementDefinition->MovementSet;
-	return MovementSet.TurnInPlace.Get<FL2MovementFragment_TurnInPlace>();
+	return MovementSet->TurnInPlace.Get<FL2MovementFragment_TurnInPlace>();
 }
 
 FL2MovementFragment_Jump UL2MoverAnimInstance::GetMovementFragment_Jump() const
 {
-	UL2MovementDefinition* MovementDefinition = GetCurrentMovementDefinition();
-	if (!IsValid(MovementDefinition))
+	const FL2MovementFragment_Movement* MovementSet = GetCurrentMovementSet();
+	if (!MovementSet || !MovementSet->Jump.IsValid())
 	{
 		FL2MovementFragment_Jump Jump;
 		return Jump;
 	}
-	const FL2MovementFragment_Movement& MovementSet = MovementDefinition->MovementSet;
-	return MovementSet.Jump.Get<FL2MovementFragment_Jump>();
+	return MovementSet->Jump.Get<FL2MovementFragment_Jump>();
 }
 
 FL2MovementFragment_AimOffset UL2MoverAnimInstance::GetMovementFragment_AimOffset() const
 {
-	UL2MovementDefinition* MovementDefinition = GetCurrentMovementDefinition();
-	if (!IsValid(MovementDefinition))
+	const FL2MovementFragment_Movement* MovementSet = GetCurrentMovementSet();
+	if (!MovementSet || !MovementSet->AimOffset.IsValid())
 	{
 		FL2MovementFragment_AimOffset AimOffset;
 		return AimOffset;
 	}
-	const FL2MovementFragment_Movement& MovementSet = MovementDefinition->MovementSet;
-	return MovementSet.AimOffset.Get<FL2MovementFragment_AimOffset>();
+	return MovementSet->AimOffset.Get<FL2MovementFragment_AimOffset>();
 }
 
 TArray<UAnimSequence*> UL2MoverAnimInstance::GetIdleBreaks() const

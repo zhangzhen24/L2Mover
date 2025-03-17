@@ -42,15 +42,15 @@ struct FL2MoverBaseSettings
 
 	//行走速度设置
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Base Settings")
-	FL2MoverGaitSpeedSettings WalkSpeedSettings{175.f, 512.f, 512.f, FRotator(0, 0, 0)};
+	FL2MoverGaitSpeedSettings WalkSpeedSettings{175.f, 512.f, 512.f, FRotator(0, 0, 400)};
 
 	//奔跑速度设置
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Base Settings")
-	FL2MoverGaitSpeedSettings RunSpeedSettings{475.f, 2048.f, 2048.f, FRotator(0, 0, 0)};
+	FL2MoverGaitSpeedSettings RunSpeedSettings{475.f, 2048.f, 2048.f, FRotator(0, 0, 400)};
 
 	//冲刺速度设置
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Base Settings")
-	FL2MoverGaitSpeedSettings SprintSpeedSettings{700.f, 2048.f, 2048.f, FRotator(0, 0, 0)};
+	FL2MoverGaitSpeedSettings SprintSpeedSettings{700.f, 2048.f, 2048.f, FRotator(0, 0, 400)};
 	
 	//RootYawOffset角度限制
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (BlueprintThreadSafe))

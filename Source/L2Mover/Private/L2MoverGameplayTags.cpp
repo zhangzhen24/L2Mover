@@ -37,7 +37,7 @@ namespace L2MoverExtendedPose
 	UE_DEFINE_GAMEPLAY_TAG(Custom, FName{TEXTVIEW("L2Mover.ExtendedPose.Custom")})
 }
 
-namespace L2MoverMovementType
+namespace L2MoverMovementSet
 {
-	UE_DEFINE_GAMEPLAY_TAG(Unarmed, FName{TEXTVIEW("L2Mover.MovementType.Unarmed")})
+	UE_DEFINE_GAMEPLAY_TAG(Unarmed, FName{TEXTVIEW("L2Mover.MovementSet.Unarmed")})
 }

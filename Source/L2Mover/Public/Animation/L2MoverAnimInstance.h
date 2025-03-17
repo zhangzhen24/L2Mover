@@ -51,8 +51,6 @@ public:
 protected:
 	void Initialization();
 	
-	void InitEvents();
-	
 	void SetAnimationData();
 	
 	void SetGroundDistance();
@@ -128,6 +126,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe))
 	bool bMovementModeChanged = false;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe))
+	FGameplayTag MovementSetName = FGameplayTag::EmptyTag;
 
 	// --------------------------------------------- Functions --------------------------------------------- //
 public:
@@ -273,6 +274,8 @@ public:
 	// --  动画数据
 	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
 	UL2MovementDefinition* GetCurrentMovementDefinition() const;
+
+	FL2MovementFragment_Movement* GetCurrentMovementSet() const;
 
 	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
 	FL2MovementFragment_Idle GetMovementFragment_Idle() const;

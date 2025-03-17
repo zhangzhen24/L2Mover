@@ -14,10 +14,10 @@ class L2MOVER_API UL2MoverLinkedAnimInstance : public UAnimInstance
 	GENERATED_BODY()
 
 protected:
-	UPROPERTY(VisibleAnywhere, Category = "State", Transient)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State", meta = (BlueprintThreadSafe), Transient)
 	TWeakObjectPtr<UL2MoverAnimInstance> Parent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State", Transient)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State", meta = (BlueprintThreadSafe), Transient)
 	TObjectPtr<ACharacter> Character;
 
 public:

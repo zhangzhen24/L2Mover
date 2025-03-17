@@ -40,7 +40,7 @@ namespace L2MoverExtendedPose
 	L2MOVER_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Custom);
 }
 
-namespace L2MoverMovementType
+namespace L2MoverMovementSet
 {
 	L2MOVER_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Unarmed);
 }

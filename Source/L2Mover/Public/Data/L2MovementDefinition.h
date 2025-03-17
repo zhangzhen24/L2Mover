@@ -31,7 +31,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Settings")
 	FL2MoverInAirSettings InAirSettings;
 
-	//运动集
+	//MovementSet
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Settings")
-	FL2MovementFragment_Movement MovementSet;
+	TMap<FGameplayTag, FL2MovementFragment_Movement> MovementSet;
+
+	FL2MovementFragment_Movement* FindMovementSet(const FGameplayTag& InMovementSetName);
 };
