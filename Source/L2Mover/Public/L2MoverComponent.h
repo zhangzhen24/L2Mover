@@ -34,9 +34,11 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FL2Mover_OnUpdateGait, const FGamepl
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FL2Mover_OnUpdateRotationMode, const FGameplayTag&, RotationMode);
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FL2Mover_OnUpdateAccelerationChanged, const bool, HasAcceleration, const double, LastVelocityDirection);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FL2Mover_OnUpdateAccelerationChanged, const bool, HasAcceleration,
+                                             const double, LastVelocityDirection);
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FL2Mover_OnUpdateMovementDefinition, UL2MovementDefinition *, InMovementDefinition);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FL2Mover_OnUpdateMovementDefinition, UL2MovementDefinition *,
+                                            InMovementDefinition);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FL2Mover_OnUpdateRootYawOffsetStatus, const bool, Disable);
 
@@ -65,46 +67,42 @@ protected:
 
 	UPROPERTY(BlueprintAssignable, Category = "L2Mover")
 	FL2Mover_OnUpdateRootYawOffsetStatus OnUpdateRootYawOffsetStatus;
-	// End of Delegate
 
 public:
 	UL2MoverComponent(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
-	// -- Begin UActorComponent Interface
-	virtual void BeginPlay() override;
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-	// -- End UActorComponent Interface
-
 protected:
-	UFUNCTION()
-	void MovementInit();
+	// -- Begin ActorComponent interface
+	virtual void BeginPlay() override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
+	                           FActorComponentTickFunction* ThisTickFunction) override;
+	// -- End ActorComponent interface
 
 public:
 	FORCEINLINE UL2MovementDefinition* GetCurrentMovementDefinition() const;
+
 	FORCEINLINE bool IsShouldMove() const;
+
 	FORCEINLINE bool IsOnGround() const;
+
 	FORCEINLINE bool IsJumping() const;
+
 	FORCEINLINE bool IsFalling() const;
+
 	FORCEINLINE bool IsSprinting() const;
+
 	FORCEINLINE bool IsAiming() const;
-	FORCEINLINE FGameplayTag GetMovementSetName() const;
+
+	FORCEINLINE FGameplayTag GetMovementState() const;
+
 	FORCEINLINE FGameplayTag GetGait() const;
+
 	FORCEINLINE FGameplayTag GetRotationMode() const;
 
 	const FCharacterGroundInfo& GetGroundInfo();
 
-	// 更新当前使用的运动定义
 	UFUNCTION(BlueprintCallable, Category = "L2Mover")
 	void SetCurrentMovementDefinition(UL2MovementDefinition* InMovementDefinition);
-
-	UFUNCTION(BlueprintCallable, Category = "L2Mover")
-	void UpdateOrientRotationToMovement() const;
-
-	UFUNCTION(BlueprintCallable, Category = "L2Mover")
-	void UpdateGaitSpeedToMovement() const;
-
-	UFUNCTION(BlueprintCallable, Category = "L2Mover")
-	void UpdateJumpingSettings() const;
 
 	UFUNCTION(BlueprintCallable, Category = "L2Mover")
 	void SetGait(FGameplayTag InGait);
@@ -115,59 +113,46 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "L2Mover")
 	void SetSprinting(bool bInIsSprinting);
 
-
-	//Tick Update
 protected:
-	UFUNCTION(BlueprintCallable, Category = "L2Mover")
-	void UpdateLocomotionData(float DeltaTime);
-
-	UFUNCTION(BlueprintCallable, Category = "L2Mover")
-	void UpdateGait(float DeltaTime);
-
-	UFUNCTION(BlueprintCallable, Category = "L2Mover")
-	void UpdateRotationMode(float DeltaTime);
-
-	UFUNCTION()
-	void OnLanded(const FHitResult& Hit);
-
-	UFUNCTION()
-	void OnGaitChanged(const FGameplayTag& InGait);
-
-public:
-	//移动预设
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
-	TObjectPtr<UL2MovementDefinition> MovementDefinition;
-
-	//所需的移动类型
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
-	FGameplayTag MovementSet = L2MoverMovementSet::Unarmed;
-
-	// 期望的步态
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
-	FGameplayTag DesiredGait = L2MoverGait::Running;
-
-	// 当前步态
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "L2Mover")
-	FGameplayTag Gait = FGameplayTag::EmptyTag;
-
-	// 期望的旋转模式
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
-	FGameplayTag DesiredRotationMode = L2MoverRotationMode::VelocityDirection;
-
-	// 当前旋转模式
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "L2Mover")
-	FGameplayTag RotationMode = FGameplayTag::EmptyTag;
-
-	// 扩展姿势
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
-	FGameplayTag ExtendedPose = FGameplayTag::EmptyTag;
-
-protected:
+	// Character
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "L2Mover")
 	TObjectPtr<ACharacter> OwnerCharacter;
 
+	// CharacterMovement
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "L2Mover")
 	TObjectPtr<UCharacterMovementComponent> CharacterMovement;
+
+	// 运动定义
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover", meta=(DisplayName = "Movement Definitions"))
+	TArray<TSoftObjectPtr<const UL2MovementDefinition>> MovementDefinitions;
+
+	// 当前激活的运动定义
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "L2Mover")
+	TObjectPtr<UL2MovementDefinition> ActivatedMovementDefinition;
+
+	// 运动状态
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover")
+	FGameplayTag MovementState{FGameplayTag::EmptyTag};
+
+	// 期望的步态
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover")
+	FGameplayTag DesiredGait{L2MoverGait::Running};
+
+	// 当前步态
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "L2Mover")
+	FGameplayTag Gait{FGameplayTag::EmptyTag};
+
+	// 期望的旋转模式
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover")
+	FGameplayTag DesiredRotationMode{L2MoverRotationMode::VelocityDirection};
+
+	// 当前旋转模式
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "L2Mover")
+	FGameplayTag RotationMode{FGameplayTag::EmptyTag};
+
+	// 扩展姿势
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover")
+	FGameplayTag ExtendedPose{FGameplayTag::EmptyTag};
 
 	// 速度
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "L2Mover")
@@ -175,36 +160,63 @@ protected:
 
 	// 速度大小
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "L2Mover")
-	float Speed = 0.f;
+	float Speed{0.f};
 
 	// 是否应该移动
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "L2Mover")
-	bool bShouldMove = false;
+	bool bShouldMove{false};
 
 	// 是否在地面上
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "L2Mover")
-	bool bIsOnGround = false;
+	bool bIsOnGround{false};
 
 	// 是否在跳跃
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "L2Mover")
-	bool bIsJumping = false;
+	bool bIsJumping{false};
 
 	// 是否在下落
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "L2Mover")
-	bool bIsFalling = false;
+	bool bIsFalling{false};
 
 	// 是否在冲刺
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "L2Mover")
-	bool bIsSprinting = false;
+	bool bIsSprinting{false};
 
 	// 是否蹲下
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "L2Mover")
-	bool bIsCrouching = false;
+	bool bIsCrouching{false};
 
 	// 地面信息
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "L2Mover")
 	FCharacterGroundInfo GroundInfo;
 
+	UFUNCTION()
+	void InitializeMovement();
+
+	UFUNCTION(BlueprintCallable, Category = "L2Mover")
+	void RefreshLocomotionData(float DeltaTime);
+
+	UFUNCTION(BlueprintCallable, Category = "L2Mover")
+	void RefreshGait(float DeltaTime);
+
+	UFUNCTION(BlueprintCallable, Category = "L2Mover")
+	void RefreshRotationMode(float DeltaTime);
+
+	UFUNCTION(BlueprintCallable, Category = "L2Mover")
+	void RefreshOrientRotationToMovement() const;
+
+	UFUNCTION(BlueprintCallable, Category = "L2Mover")
+	void RefreshGaitSpeedToMovement() const;
+
+	UFUNCTION(BlueprintCallable, Category = "L2Mover")
+	void RefreshJumpingSettings() const;
+
+	UFUNCTION()
+	void OnLanded(const FHitResult& Hit);
+
+	UFUNCTION()
+	void OnGaitChanged(const FGameplayTag& InGait);
+
 private:
-	uint8 bInitialized : 1 = false;
+	uint8 bInitialized : 1 {false};
 };

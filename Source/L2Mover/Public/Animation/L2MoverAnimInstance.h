@@ -6,7 +6,6 @@
 #include "GameplayTagContainer.h"
 #include "L2MoverGameplayTags.h"
 #include "Animation/AnimInstance.h"
-#include "Data/L2MovementFragment.h"
 #include "Data/L2MoverMovementEnums.h"
 #include "L2MoverAnimInstance.generated.h"
 
@@ -14,6 +13,22 @@
 class ACharacter;
 class UCharacterMovementComponent;
 class UL2MoverComponent;
+class UL2MovementDefinition;
+
+struct FAnimUpdateContext;
+struct FAnimNodeReference;
+struct FL2Mover_AnimData_Movement;
+struct FL2Mover_AnimData;
+struct FL2Mover_AnimData_Idle;
+struct FL2Mover_AnimData_Start_VelocityDirection;
+struct FL2Mover_AnimData_Start_LookingDirection;
+struct FL2Mover_AnimData_Cycle;
+struct FL2Mover_AnimData_Stop;
+struct FL2Mover_AnimData_Sprint;
+struct FL2Mover_AnimData_Pivot;
+struct FL2Mover_AnimData_TurnInPlace;
+struct FL2Mover_AnimData_Jump;
+struct FL2Mover_AnimData_AimOffset;
 
 
 namespace L2Mover_AnimCurveName
@@ -37,24 +52,18 @@ class L2MOVER_API UL2MoverAnimInstance : public UAnimInstance
 public:
 	UL2MoverAnimInstance(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
+	// -- Begin AnimInstance Interface
 	virtual void NativeBeginPlay() override;
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativePostUpdateAnimation();
-
-	virtual FAnimInstanceProxy* CreateAnimInstanceProxy() override;
-	
-
-	UFUNCTION()
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 	virtual void NativeThreadSafeUpdateAnimation(float DeltaSeconds) override;
-	void UpdateInWall();
+	virtual FAnimInstanceProxy* CreateAnimInstanceProxy() override;
+	// -- End AnimInstance Interface
+
 
 protected:
 	void Initialization();
-
-	void SetAnimationData();
-
-	void SetGroundDistance();
 
 	UFUNCTION()
 	void OnUpdateGait(const FGameplayTag& InGait);
@@ -100,7 +109,8 @@ protected:
 	void UpdateJumpFallData(float DeltaTime);
 	void UpdateWallDetectionHeuristic(float DeltaTime);
 	void UpdateUpperBodyAlpha(float DeltaTime);
-	void CheckAnimValid(float DeltaTime);
+	void UpdateInWall();
+	void UpdateCheckAnimValid(float DeltaTime);
 
 protected:
 	UPROPERTY(BlueprintReadOnly, meta=(BlueprintThreadSafe))
@@ -169,7 +179,8 @@ public:
 	UFUNCTION(BlueprintCallable, meta = (AnimBlueprintFunction, BlueprintThreadSafe), Category = "State Node Functions")
 	void OnUpdate_UpdatePivotState(const FAnimUpdateContext& Context, const FAnimNodeReference& Node);
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, meta = (AnimBlueprintFunction, BlueprintThreadSafe), Category = "State Node Functions")
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, meta = (AnimBlueprintFunction, BlueprintThreadSafe),
+		Category = "State Node Functions")
 	void OnUpdate_UpdateLocomotionStateMachine(const FAnimUpdateContext& Context, const FAnimNodeReference& Node);
 
 	UFUNCTION(BlueprintCallable, meta = (AnimBlueprintFunction, BlueprintThreadSafe), Category = "State Node Functions")
@@ -230,10 +241,12 @@ public:
 	void OnUpdate_UpdateTurnInPlaceAnim(const FAnimUpdateContext& Context, const FAnimNodeReference& Node);
 
 	UFUNCTION(BlueprintCallable, meta = (AnimBlueprintFunction, BlueprintThreadSafe), Category = "Turn In Place")
-	void OnBecomeRelevant_SetUpTurnInPlaceRotationState(const FAnimUpdateContext& Context, const FAnimNodeReference& Node);
+	void OnBecomeRelevant_SetUpTurnInPlaceRotationState(const FAnimUpdateContext& Context,
+	                                                    const FAnimNodeReference& Node);
 
 	UFUNCTION(BlueprintCallable, meta = (AnimBlueprintFunction, BlueprintThreadSafe), Category = "Turn In Place")
-	void OnBecomeRelevant_SetUpTurnInPlaceRecoveryState(const FAnimUpdateContext& Context, const FAnimNodeReference& Node);
+	void OnBecomeRelevant_SetUpTurnInPlaceRecoveryState(const FAnimUpdateContext& Context,
+	                                                    const FAnimNodeReference& Node);
 
 	UFUNCTION(BlueprintCallable, meta = (AnimBlueprintFunction, BlueprintThreadSafe), Category = "Turn In Place")
 	void OnUpdate_UpdateTurnInPlaceRecoveryAnim(const FAnimUpdateContext& Context, const FAnimNodeReference& Node);
@@ -275,37 +288,37 @@ public:
 	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
 	UL2MovementDefinition* GetCurrentMovementDefinition() const;
 
-	FL2MovementFragment_Movement* GetCurrentMovementSet() const;
+	FL2Mover_AnimData_Movement* GetCurrentMovementSet() const;
 
 	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
-	FL2MovementFragment_Idle GetMovementFragment_Idle() const;
+	FL2Mover_AnimData_Idle GetMovementFragment_Idle() const;
 
 	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
-	FL2MovementFragment_Start GetMovementFragment_Start() const;
+	FL2Mover_AnimData_Start_VelocityDirection GetMovementFragment_Start() const;
 
 	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
-	FL2MovementFragment_Start_4Way GetMovementFragment_StartForwardFacing() const;
+	FL2Mover_AnimData_Start_LookingDirection GetMovementFragment_StartForwardFacing() const;
 
 	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
-	FL2MovementFragment_Cycle GetMovementFragment_Cycle() const;
+	FL2Mover_AnimData_Cycle GetMovementFragment_Cycle() const;
 
 	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
-	FL2MovementFragment_Stop GetMovementFragment_Stop() const;
+	FL2Mover_AnimData_Stop GetMovementFragment_Stop() const;
 
 	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
-	FL2MovementFragment_Sprint GetMovementFragment_Sprint() const;
+	FL2Mover_AnimData_Sprint GetMovementFragment_Sprint() const;
 
 	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
-	FL2MovementFragment_Pivot GetMovementFragment_Pivot() const;
+	FL2Mover_AnimData_Pivot GetMovementFragment_Pivot() const;
 
 	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
-	FL2MovementFragment_TurnInPlace GetMovementFragment_TurnInPlace() const;
+	FL2Mover_AnimData_TurnInPlace GetMovementFragment_TurnInPlace() const;
 
 	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
-	FL2MovementFragment_Jump GetMovementFragment_Jump() const;
+	FL2Mover_AnimData_Jump GetMovementFragment_Jump() const;
 
 	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
-	FL2MovementFragment_AimOffset GetMovementFragment_AimOffset() const;
+	FL2Mover_AnimData_AimOffset GetMovementFragment_AimOffset() const;
 
 	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
 	TArray<UAnimSequence*> GetIdleBreaks() const;

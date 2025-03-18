@@ -6,9 +6,11 @@
 #include "Data/L2MoverMovementEnums.h"
 #include "Kismet/KismetMathLibrary.h"
 
-EL2MovementDirection UL2MoverUtility::SelectCardinalDirectionFromAngle(float Angle, float DeadZone, EL2MovementDirection CurrentDirection, bool bUseCurrentDirection)
+EL2MovementDirection UL2MoverUtility::SelectCardinalDirectionFromAngle(float LocalVelocityAngle, float DeadZone,
+                                                                       EL2MovementDirection CurrentDirection,
+                                                                       bool bUseCurrentDirection)
 {
-	const float AbsAngle = UKismetMathLibrary::Abs(Angle);
+	const float AbsAngle = UKismetMathLibrary::Abs(LocalVelocityAngle);
 	float FwdDeadZone = DeadZone;
 	float BwdDeadZone = DeadZone;
 	if (bUseCurrentDirection)
@@ -28,42 +30,48 @@ EL2MovementDirection UL2MoverUtility::SelectCardinalDirectionFromAngle(float Ang
 		}
 	}
 
+	EL2MovementDirection Result;
 	if (AbsAngle <= 45 + FwdDeadZone)
 	{
-		return EL2MovementDirection::Forward;
+		Result = EL2MovementDirection::Forward;
 	}
 	else if (AbsAngle >= 135 - BwdDeadZone)
 	{
-		return EL2MovementDirection::Backward;
+		Result = EL2MovementDirection::Backward;
 	}
-	else if (Angle > 0)
+	else if (LocalVelocityAngle > 0)
 	{
-		return EL2MovementDirection::Right;
+		Result = EL2MovementDirection::Right;
 	}
 	else
 	{
-		return EL2MovementDirection::Left;
+		Result = EL2MovementDirection::Left;
 	}
+	return Result;
 }
 
 EL2MovementDirection UL2MoverUtility::GetOppositeCardinalDirection(const EL2MovementDirection CurrentDirection)
 {
-	if (CurrentDirection == EL2MovementDirection::Forward)
+	EL2MovementDirection Result;
+	switch (CurrentDirection)
 	{
-		return EL2MovementDirection::Backward;
+	case EL2MovementDirection::Forward:
+		Result = EL2MovementDirection::Backward;
+		break;
+	case EL2MovementDirection::Backward:
+		Result = EL2MovementDirection::Forward;
+		break;
+	case EL2MovementDirection::Left:
+		Result = EL2MovementDirection::Right;
+		break;
+	case EL2MovementDirection::Right:
+		Result = EL2MovementDirection::Left;
+		break;
+	default:
+		Result = EL2MovementDirection::Backward;
+		break;
 	}
-	else if (CurrentDirection == EL2MovementDirection::Backward)
-	{
-		return EL2MovementDirection::Forward;
-	}
-	else if (CurrentDirection == EL2MovementDirection::Left)
-	{
-		return EL2MovementDirection::Right;
-	}
-	else
-	{
-		return EL2MovementDirection::Left;
-	}
+	return Result;
 }
 
 bool UL2MoverUtility::IsSafeValid(const UObject* WorldContextObject)

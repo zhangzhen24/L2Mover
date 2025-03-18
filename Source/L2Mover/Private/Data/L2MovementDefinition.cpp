@@ -7,9 +7,9 @@ UL2MovementDefinition::UL2MovementDefinition()
 {
 }
 
-FL2MovementFragment_Movement* UL2MovementDefinition::FindMovementSet(const FGameplayTag& InMovementSetName)
+FL2Mover_AnimData_Movement* UL2MovementDefinition::FindMovementSet(const FGameplayTag& InMovementState)
 {
-	if (FL2MovementFragment_Movement* Result = MovementSet.Find(InMovementSetName))
+	if (FL2Mover_AnimData_Movement* Result = MovementSet.Find(InMovementState))
 	{
 		return Result;
 	}

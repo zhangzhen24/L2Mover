@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "L2MovementFragment.h"
+#include "L2MoverAnimData.h"
 #include "Engine/DataAsset.h"
 #include "Settings/L2MoverBaseSettings.h"
 #include "Settings/L2MoverGroundedSettings.h"
@@ -31,9 +31,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Settings")
 	FL2MoverInAirSettings InAirSettings;
 
-	//MovementSet
+	//MovementState
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Settings")
-	TMap<FGameplayTag, FL2MovementFragment_Movement> MovementSet;
+	TMap<FGameplayTag, FL2Mover_AnimData_Movement> MovementSet;
 
-	FL2MovementFragment_Movement* FindMovementSet(const FGameplayTag& InMovementSetName);
+	FL2Mover_AnimData_Movement* FindMovementSet(const FGameplayTag& InMovementState);
 };

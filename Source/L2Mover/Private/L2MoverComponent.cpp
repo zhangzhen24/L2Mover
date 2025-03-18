@@ -15,7 +15,8 @@ namespace L2Mover
 {
 	static float GroundTraceDistance = 100000.0f;
 	FAutoConsoleVariableRef CVar_GroundTraceDistance(TEXT("L2Mover.GroundTraceDistance"), GroundTraceDistance,
-	                                                 TEXT("Distance to trace down when generating ground information."), ECVF_Cheat);
+	                                                 TEXT("Distance to trace down when generating ground information."),
+	                                                 ECVF_Cheat);
 };
 
 UL2MoverComponent::UL2MoverComponent(const FObjectInitializer& ObjectInitializer)
@@ -30,22 +31,23 @@ void UL2MoverComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ThisClass::MovementInit);
+	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ThisClass::InitializeMovement);
 }
 
-void UL2MoverComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UL2MoverComponent::TickComponent(float DeltaTime, ELevelTick TickType,
+                                      FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	if (bInitialized)
 	{
-		UpdateLocomotionData(DeltaTime);
-		UpdateGait(DeltaTime);
-		UpdateRotationMode(DeltaTime);
+		RefreshLocomotionData(DeltaTime);
+		RefreshGait(DeltaTime);
+		RefreshRotationMode(DeltaTime);
 	}
 }
 
-void UL2MoverComponent::MovementInit()
+void UL2MoverComponent::InitializeMovement()
 {
 	AActor* OwnerActor = GetOwner();
 	if (!IsValid(OwnerActor))
@@ -76,7 +78,7 @@ void UL2MoverComponent::MovementInit()
 	SetRotationMode(DesiredRotationMode);
 
 	// 设置JumpingSettings
-	UpdateJumpingSettings();
+	RefreshJumpingSettings();
 
 	bInitialized = true;
 }
@@ -88,10 +90,10 @@ void UL2MoverComponent::OnLanded(const FHitResult& Hit)
 
 void UL2MoverComponent::OnGaitChanged(const FGameplayTag& InGait)
 {
-	UpdateGaitSpeedToMovement();
+	RefreshGaitSpeedToMovement();
 }
 
-void UL2MoverComponent::UpdateLocomotionData(float DeltaTime)
+void UL2MoverComponent::RefreshLocomotionData(float DeltaTime)
 {
 	if (OwnerCharacter && CharacterMovement)
 	{
@@ -99,7 +101,8 @@ void UL2MoverComponent::UpdateLocomotionData(float DeltaTime)
 		Speed = OwnerCharacter->GetVelocity().Size2D();
 		bIsSprinting = Gait == L2MoverGait::Sprinting;
 
-		bShouldMove = Speed > 3 && !UKismetMathLibrary::EqualEqual_VectorVector(CharacterMovement->GetCurrentAcceleration(), FVector(0));
+		bShouldMove = Speed > 3 && !UKismetMathLibrary::EqualEqual_VectorVector(
+			CharacterMovement->GetCurrentAcceleration(), FVector(0));
 		bIsJumping = false;
 		bIsFalling = false;
 		bIsOnGround = CharacterMovement->IsMovingOnGround();
@@ -109,7 +112,7 @@ void UL2MoverComponent::UpdateLocomotionData(float DeltaTime)
 	}
 }
 
-void UL2MoverComponent::UpdateGait(float DeltaTime)
+void UL2MoverComponent::RefreshGait(float DeltaTime)
 {
 	if (DesiredGait != Gait)
 	{
@@ -118,7 +121,7 @@ void UL2MoverComponent::UpdateGait(float DeltaTime)
 	}
 }
 
-void UL2MoverComponent::UpdateRotationMode(float DeltaTime)
+void UL2MoverComponent::RefreshRotationMode(float DeltaTime)
 {
 	if (DesiredRotationMode != RotationMode)
 	{
@@ -126,13 +129,13 @@ void UL2MoverComponent::UpdateRotationMode(float DeltaTime)
 		RotationMode = IsAiming() ? L2MoverRotationMode::LookingDirection : DesiredRotationMode;
 		OnUpdateRotationMode.Broadcast(RotationMode);
 
-		UpdateOrientRotationToMovement();
+		RefreshOrientRotationToMovement();
 	}
 }
 
 inline UL2MovementDefinition* UL2MoverComponent::GetCurrentMovementDefinition() const
 {
-	return MovementDefinition;
+	return ActivatedMovementDefinition;
 }
 
 inline bool UL2MoverComponent::IsShouldMove() const
@@ -165,9 +168,9 @@ inline bool UL2MoverComponent::IsAiming() const
 	return ExtendedPose == L2MoverExtendedPose::Aiming;
 }
 
-FGameplayTag UL2MoverComponent::GetMovementSetName() const
+FGameplayTag UL2MoverComponent::GetMovementState() const
 {
-	return MovementSet;
+	return MovementState;
 }
 
 const FCharacterGroundInfo& UL2MoverComponent::GetGroundInfo()
@@ -198,16 +201,20 @@ const FCharacterGroundInfo& UL2MoverComponent::GetGroundInfo()
 		check(CapsuleComp);
 
 		const float CapsuleHalfHeight = CapsuleComp->GetUnscaledCapsuleHalfHeight();
-		const ECollisionChannel CollisionChannel = (CharacterMovement->UpdatedComponent ? CharacterMovement->UpdatedComponent->GetCollisionObjectType() : ECC_Pawn);
+		const ECollisionChannel CollisionChannel = (CharacterMovement->UpdatedComponent
+			                                            ? CharacterMovement->UpdatedComponent->GetCollisionObjectType()
+			                                            : ECC_Pawn);
 		const FVector TraceStart(CharacterMovement->GetActorLocation());
-		const FVector TraceEnd(TraceStart.X, TraceStart.Y, (TraceStart.Z - L2Mover::GroundTraceDistance - CapsuleHalfHeight));
+		const FVector TraceEnd(TraceStart.X, TraceStart.Y,
+		                       (TraceStart.Z - L2Mover::GroundTraceDistance - CapsuleHalfHeight));
 
 		FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(L2MoverComponent_GetGroundInfo), false, OwnerCharacter);
 		FCollisionResponseParams ResponseParam;
 		CharacterMovement->InitCollisionParams(QueryParams, ResponseParam);
 
 		FHitResult HitResult;
-		GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, CollisionChannel, QueryParams, ResponseParam);
+		GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, CollisionChannel, QueryParams,
+		                                     ResponseParam);
 
 		GroundInfo.GroundHitResult = HitResult;
 		GroundInfo.GroundDistance = L2Mover::GroundTraceDistance;
@@ -252,7 +259,7 @@ inline void UL2MoverComponent::SetSprinting(bool bInIsSprinting)
 	bIsSprinting = bInIsSprinting;
 }
 
-void UL2MoverComponent::UpdateOrientRotationToMovement() const
+void UL2MoverComponent::RefreshOrientRotationToMovement() const
 {
 	if (CharacterMovement)
 	{
@@ -262,12 +269,12 @@ void UL2MoverComponent::UpdateOrientRotationToMovement() const
 	}
 }
 
-void UL2MoverComponent::UpdateGaitSpeedToMovement() const
+void UL2MoverComponent::RefreshGaitSpeedToMovement() const
 {
-	// 设置运动的步态速度
 	if (CharacterMovement && IsValid(GetCurrentMovementDefinition()))
 	{
-		const FL2MoverGaitSpeedSettings GaitSpeedSettings = GetCurrentMovementDefinition()->BaseSettings.GetGaitSpeedSettings(Gait);
+		const FL2MoverGaitSpeedSettings GaitSpeedSettings
+			= GetCurrentMovementDefinition()->BaseSettings.GetGaitSpeedSettings(Gait);
 		CharacterMovement->MaxWalkSpeed = GaitSpeedSettings.MaxSpeed;
 		CharacterMovement->MaxAcceleration = GaitSpeedSettings.MaxAcceleration;
 		CharacterMovement->BrakingDecelerationWalking = GaitSpeedSettings.BreakingDecelerationWalking;
@@ -275,7 +282,7 @@ void UL2MoverComponent::UpdateGaitSpeedToMovement() const
 	}
 }
 
-void UL2MoverComponent::UpdateJumpingSettings() const
+void UL2MoverComponent::RefreshJumpingSettings() const
 {
 	if (CharacterMovement && IsValid(GetCurrentMovementDefinition()))
 	{
@@ -292,9 +299,9 @@ void UL2MoverComponent::UpdateJumpingSettings() const
 
 void UL2MoverComponent::SetCurrentMovementDefinition(UL2MovementDefinition* InMovementDefinition)
 {
-	if (InMovementDefinition != MovementDefinition)
+	if (InMovementDefinition != ActivatedMovementDefinition)
 	{
-		MovementDefinition = InMovementDefinition;
-		OnUpdateMovementDefinition.Broadcast(MovementDefinition);
+		ActivatedMovementDefinition = InMovementDefinition;
+		OnUpdateMovementDefinition.Broadcast(ActivatedMovementDefinition);
 	}
 }

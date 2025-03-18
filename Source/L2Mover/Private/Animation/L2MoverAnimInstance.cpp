@@ -15,7 +15,7 @@
 #include "Animation/AnimSubsystem_Tag.h"
 #include "Animation/L2MoverAnimInstanceProxy.h"
 #include "Data/L2MovementDefinition.h"
-#include "Data/L2MovementFragment.h"
+#include "Data/L2MoverAnimData.h"
 #include "Data/L2MoverMovementEnums.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -86,7 +86,7 @@ void UL2MoverAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 
 
 	//Character State
-	MovementSetName = L2MoverComponent->GetMovementSetName();
+	MovementSetName = L2MoverComponent->GetMovementState();
 	Gait = L2MoverComponent->GetGait();
 	RotationMode = L2MoverComponent->GetRotationMode();
 
@@ -100,7 +100,7 @@ void UL2MoverAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	UpdateRootYawOffset(DeltaSeconds);
 	UpdateAimData(DeltaSeconds);
 	UpdateJumpFallData(DeltaSeconds);
-	CheckAnimValid(DeltaSeconds);
+	UpdateCheckAnimValid(DeltaSeconds);
 
 	//是否开启ControlRig
 	bEnableFootIK = GetCurveValue(L2Mover_AnimCurveName::DisableLegIK) > 0.f;
@@ -140,7 +140,8 @@ void UL2MoverAnimInstance::Initialization()
 
 		if (!L2MoverComponent)
 		{
-			L2MOVER_LOG(Error, TEXT("%s: Can not found L2MoverComponent in %s."), ANSI_TO_TCHAR(__FUNCTION__), *OwnerCharacter->GetName());
+			L2MOVER_LOG(Error, TEXT("%s: Can not found L2MoverComponent in %s."), ANSI_TO_TCHAR(__FUNCTION__),
+			            *OwnerCharacter->GetName());
 			return;
 		}
 
@@ -150,7 +151,8 @@ void UL2MoverAnimInstance::Initialization()
 			L2MoverComponent->OnUpdateRotationMode.AddUniqueDynamic(this, &ThisClass::OnUpdateRotationMode);
 			L2MoverComponent->OnUpdateGait.AddUniqueDynamic(this, &ThisClass::OnUpdateGait);
 			L2MoverComponent->OnUpdateAccelerationChanged.AddUniqueDynamic(this, &ThisClass::OnAccelerationChanged);
-			L2MoverComponent->OnUpdateRootYawOffsetStatus.AddUniqueDynamic(this, &ThisClass::OnUpdateRootYawOffsetStatus);
+			L2MoverComponent->OnUpdateRootYawOffsetStatus.AddUniqueDynamic(
+				this, &ThisClass::OnUpdateRootYawOffsetStatus);
 
 			OwnerCharacter->MovementModeChangedDelegate.AddUniqueDynamic(this, &ThisClass::OnMovementModeChanged);
 
@@ -160,14 +162,6 @@ void UL2MoverAnimInstance::Initialization()
 			OnUpdateRootYawOffsetStatus(bEnableRootYawOffset);
 		}
 	}
-}
-
-void UL2MoverAnimInstance::SetAnimationData()
-{
-}
-
-void UL2MoverAnimInstance::SetGroundDistance()
-{
 }
 
 void UL2MoverAnimInstance::OnUpdateGait(const FGameplayTag& InGait)
@@ -190,7 +184,8 @@ void UL2MoverAnimInstance::OnUpdateRootYawOffsetStatus(const bool bInEnableRootY
 {
 }
 
-void UL2MoverAnimInstance::OnMovementModeChanged(ACharacter* InCharacter, EMovementMode InPrevMovementMode, uint8 InPreviousCustomMode)
+void UL2MoverAnimInstance::OnMovementModeChanged(ACharacter* InCharacter, EMovementMode InPrevMovementMode,
+                                                 uint8 InPreviousCustomMode)
 {
 }
 
@@ -248,9 +243,11 @@ void UL2MoverAnimInstance::UpdateVelocityData(float DeltaTime)
 	//具有偏移值的 局部速度方向角
 	LocalVelocityDirectionAngleWithOffset = LocalVelocityDirectionAngle - RootYawOffset;
 	//局部速度方向
-	LocalVelocityDirection = UL2MoverUtility::SelectCardinalDirectionFromAngle(LocalVelocityDirectionAngleWithOffset, CardinalDirectionDeadZone, LocalVelocityDirection, bWasMovingLastUpdate);
+	LocalVelocityDirection = UL2MoverUtility::SelectCardinalDirectionFromAngle(
+		LocalVelocityDirectionAngleWithOffset, CardinalDirectionDeadZone, LocalVelocityDirection, bWasMovingLastUpdate);
 	//没有偏移值的局部速度方向
-	LocalVelocityDirectionNoOffset = UL2MoverUtility::SelectCardinalDirectionFromAngle(LocalVelocityDirectionAngle, CardinalDirectionDeadZone, LocalVelocityDirectionNoOffset, bWasMovingLastUpdate);
+	LocalVelocityDirectionNoOffset = UL2MoverUtility::SelectCardinalDirectionFromAngle(
+		LocalVelocityDirectionAngle, CardinalDirectionDeadZone, LocalVelocityDirectionNoOffset, bWasMovingLastUpdate);
 	//是否有速度
 	bHasVelocity = !UKismetMathLibrary::NearlyEqual_FloatFloat(LocalVelocity2D.SizeSquared2D(), 0.0f, 0.000001);
 }
@@ -267,11 +264,14 @@ void UL2MoverAnimInstance::UpdateAccelerationData(float DeltaTime)
 	bHasAcceleration = !UKismetMathLibrary::NearlyEqual_FloatFloat(LocalAcceleration2D.SizeSquared2D(), 0.0f, 0.000001);
 	//枢轴方向2D
 	//tips: 从加速度计算一个用于轴的基本方向。加速度比速度更能传达玩家意图。
-	PivotDirection2D = UKismetMathLibrary::VLerp(PivotDirection2D, WorldAcceleration2D.GetSafeNormal(0.0001), 0.5f).GetSafeNormal(0.0001);
+	PivotDirection2D = UKismetMathLibrary::VLerp(PivotDirection2D, WorldAcceleration2D.GetSafeNormal(0.0001), 0.5f).
+		GetSafeNormal(0.0001);
 	//加速度的基本方向
 	const double Angle = UKismetAnimationLibrary::CalculateDirection(PivotDirection2D, WorldRotation);
-	CardinalDirectionFromAcceleration = UL2MoverUtility::SelectCardinalDirectionFromAngle(Angle, CardinalDirectionDeadZone, EL2MovementDirection::Forward, false);
-	CardinalDirectionFromAcceleration = UL2MoverUtility::GetOppositeCardinalDirection(CardinalDirectionFromAcceleration);
+	CardinalDirectionFromAcceleration = UL2MoverUtility::SelectCardinalDirectionFromAngle(
+		Angle, CardinalDirectionDeadZone, EL2MovementDirection::Forward, false);
+	CardinalDirectionFromAcceleration =
+		UL2MoverUtility::GetOppositeCardinalDirection(CardinalDirectionFromAcceleration);
 }
 
 void UL2MoverAnimInstance::UpdateCharacterStateData(float DeltaTime)
@@ -295,7 +295,10 @@ void UL2MoverAnimInstance::UpdateCharacterStateData(float DeltaTime)
 void UL2MoverAnimInstance::UpdateBlendWeightData(float DeltaTime)
 {
 	//上半身动态添加权重
-	UpperBodyDynamicAdditiveWeight = (IsAnyMontagePlaying() && bIsOnGround) ? 1.0f : UKismetMathLibrary::FInterpTo(UpperBodyDynamicAdditiveWeight, 0.0f, DeltaTime, 6.0f);
+	UpperBodyDynamicAdditiveWeight = (IsAnyMontagePlaying() && bIsOnGround)
+		                                 ? 1.0f
+		                                 : UKismetMathLibrary::FInterpTo(
+			                                 UpperBodyDynamicAdditiveWeight, 0.0f, DeltaTime, 6.0f);
 }
 
 void UL2MoverAnimInstance::UpdateAimData(float DeltaTime)
@@ -326,7 +329,8 @@ void UL2MoverAnimInstance::UpdateWallDetectionHeuristic(float DeltaTime)
 		LocalAcceleration2D.Size2D() > 0.1f &&
 		LocalVelocity2D.Size2D() < 200.f &&
 		UKismetMathLibrary::InRange_FloatFloat(
-			UKismetMathLibrary::Dot_VectorVector(LocalAcceleration2D.GetSafeNormal(0.0001), LocalVelocity2D.GetSafeNormal(0.0001)),
+			UKismetMathLibrary::Dot_VectorVector(LocalAcceleration2D.GetSafeNormal(0.0001),
+			                                     LocalVelocity2D.GetSafeNormal(0.0001)),
 			-0.6f, 0.6f, true, true);
 }
 
@@ -338,41 +342,45 @@ void UL2MoverAnimInstance::UpdateUpperBodyAlpha(float DeltaTime)
 	UpperBodyAlpha = UKismetMathLibrary::FInterpTo(UpperBodyAlpha, TempValue, DeltaTime, 10.f);
 }
 
-void UL2MoverAnimInstance::CheckAnimValid(float DeltaTime)
+void UL2MoverAnimInstance::UpdateCheckAnimValid(float DeltaTime)
 {
-	const FL2MovementFragment_Idle& IdleData = GetMovementFragment_Idle();
+	const FL2Mover_AnimData_Idle& IdleData = GetMovementFragment_Idle();
 	bIsAnimValid_Idle = IdleData.IsAnimValid();
 
-	const FL2MovementFragment_Start& StartData = GetMovementFragment_Start();
+	const FL2Mover_AnimData_Start_VelocityDirection& StartData = GetMovementFragment_Start();
 	bIsAnimValid_Start = StartData.IsAnimValid();
 
-	const FL2MovementFragment_Start_4Way& StartData_4Way = GetMovementFragment_StartForwardFacing();
+	const FL2Mover_AnimData_Start_LookingDirection& StartData_4Way = GetMovementFragment_StartForwardFacing();
 	bIsAnimValid_StartForwardFacing = StartData_4Way.IsAnimValid();
 
-	const FL2MovementFragment_Cycle& CycleData = GetMovementFragment_Cycle();
+	const FL2Mover_AnimData_Cycle& CycleData = GetMovementFragment_Cycle();
 	bIsAnimValid_Cycle = CycleData.IsAnimValid();
 
-	const FL2MovementFragment_Stop& StopData = GetMovementFragment_Stop();
+	const FL2Mover_AnimData_Stop& StopData = GetMovementFragment_Stop();
 	bIsAnimValid_Stop = StopData.IsAnimValid();
 
-	const FL2MovementFragment_Pivot& PivotData = GetMovementFragment_Pivot();
+	const FL2Mover_AnimData_Pivot& PivotData = GetMovementFragment_Pivot();
 	bIsAnimValid_Pivot = PivotData.IsAnimValid();
 
-	const FL2MovementFragment_Jump& JumpData = GetMovementFragment_Jump();
+	const FL2Mover_AnimData_Jump& JumpData = GetMovementFragment_Jump();
 	bIsAnimValid_JumpApex = IsValid(JumpData.Jump_Apex);
 	bIsAnimValid_JumpFallLand = IsValid(JumpData.Jump_FallLand);
 	bIsAnimValid_JumpStartLoop = IsValid(JumpData.Jump_StartLoop);
 
-	const FL2MovementFragment_AimOffset& AimOffsetData = GetMovementFragment_AimOffset();
+	const FL2Mover_AnimData_AimOffset& AimOffsetData = GetMovementFragment_AimOffset();
 	bIsAnimValid_AimOffset = IsValid(AimOffsetData.AimOffset);
 }
 
 bool UL2MoverAnimInstance::IsMovingPerpendicularToInitialPivot() const
 {
-	bool A = PivotInitialDirection == EL2MovementDirection::Forward || PivotInitialDirection == EL2MovementDirection::Backward;
-	bool B = LocalVelocityDirection == EL2MovementDirection::Forward || LocalVelocityDirection == EL2MovementDirection::Backward;
-	bool C = PivotInitialDirection == EL2MovementDirection::Left || PivotInitialDirection == EL2MovementDirection::Right;
-	bool D = LocalVelocityDirection == EL2MovementDirection::Left || LocalVelocityDirection == EL2MovementDirection::Right;
+	bool A = PivotInitialDirection == EL2MovementDirection::Forward || PivotInitialDirection ==
+		EL2MovementDirection::Backward;
+	bool B = LocalVelocityDirection == EL2MovementDirection::Forward || LocalVelocityDirection ==
+		EL2MovementDirection::Backward;
+	bool C = PivotInitialDirection == EL2MovementDirection::Left || PivotInitialDirection ==
+		EL2MovementDirection::Right;
+	bool D = LocalVelocityDirection == EL2MovementDirection::Left || LocalVelocityDirection ==
+		EL2MovementDirection::Right;
 	//速度方向垂直于折返运动方向
 	return (A && !B) || (C && !D);
 }
@@ -386,7 +394,8 @@ void UL2MoverAnimInstance::SetRootYawOffset(float InRootYawOffset)
 		if (IsValid(MovementDefinition))
 		{
 			FVector2D TempRootYawOffsetAngleClamp = bIsCrouching
-				                                        ? MovementDefinition->BaseSettings.RootYawOffsetAngleClampCrouched
+				                                        ? MovementDefinition->BaseSettings.
+				                                                              RootYawOffsetAngleClampCrouched
 				                                        : MovementDefinition->BaseSettings.RootYawOffsetAngleClamp;
 			if (TempRootYawOffsetAngleClamp.X == TempRootYawOffsetAngleClamp.Y)
 			{
@@ -456,9 +465,11 @@ void UL2MoverAnimInstance::ProcessTurnYawCurve_VelocityDirection()
 		if (PreviousTurnYawCurveValue != 0.f)
 		{
 			float NewRootYawOffset = RootYawOffset -
-				FMath::Clamp(UKismetMathLibrary::SafeDivide(LocalVelocityDirectionAngleWithOffset, TurnYawCurveValue) * (TurnYawCurveValue - PreviousTurnYawCurveValue),
-				             FMath::Abs(LocalVelocityDirectionAngleWithOffset) * -1.f,
-				             FMath::Abs(LocalVelocityDirectionAngleWithOffset));
+				FMath::Clamp(
+					UKismetMathLibrary::SafeDivide(LocalVelocityDirectionAngleWithOffset, TurnYawCurveValue) * (
+						TurnYawCurveValue - PreviousTurnYawCurveValue),
+					FMath::Abs(LocalVelocityDirectionAngleWithOffset) * -1.f,
+					FMath::Abs(LocalVelocityDirectionAngleWithOffset));
 			SetRootYawOffset(NewRootYawOffset);
 		}
 	}
@@ -513,7 +524,8 @@ void UL2MoverAnimInstance::OnUpdate_UpdateIdleState(const FAnimUpdateContext& Co
 	}
 }
 
-void UL2MoverAnimInstance::OnBecomeRelevant_SetUpStartState(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
+void UL2MoverAnimInstance::OnBecomeRelevant_SetUpStartState(const FAnimUpdateContext& Context,
+                                                            const FAnimNodeReference& Node)
 {
 	//起步方向
 	StartDirection = LocalVelocityDirection;
@@ -561,7 +573,8 @@ void UL2MoverAnimInstance::OnUpdate_UpdateStopState(const FAnimUpdateContext& Co
 	}
 }
 
-void UL2MoverAnimInstance::OnBecomeRelevant_SetUpPivotState(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
+void UL2MoverAnimInstance::OnBecomeRelevant_SetUpPivotState(const FAnimUpdateContext& Context,
+                                                            const FAnimNodeReference& Node)
 {
 	//折返初始方向
 	PivotInitialDirection = LocalVelocityDirection;
@@ -576,7 +589,8 @@ void UL2MoverAnimInstance::OnUpdate_UpdatePivotState(const FAnimUpdateContext& C
 	}
 }
 
-void UL2MoverAnimInstance::OnBecomeRelevant_SetUpIdleState_IdleSM(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
+void UL2MoverAnimInstance::OnBecomeRelevant_SetUpIdleState_IdleSM(const FAnimUpdateContext& Context,
+                                                                  const FAnimNodeReference& Node)
 {
 	//选择空闲动画的延迟时间
 	ChooseIdleBreakDelayTime();
@@ -586,7 +600,8 @@ void UL2MoverAnimInstance::OnBecomeRelevant_SetUpIdleState_IdleSM(const FAnimUpd
 }
 
 
-void UL2MoverAnimInstance::OnUpdate_UpdateIdleState_IdleSM(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
+void UL2MoverAnimInstance::OnUpdate_UpdateIdleState_IdleSM(const FAnimUpdateContext& Context,
+                                                           const FAnimNodeReference& Node)
 {
 	bool Result = false;
 	FAnimationStateResultReference AnimationState;
@@ -599,13 +614,15 @@ void UL2MoverAnimInstance::OnUpdate_UpdateIdleState_IdleSM(const FAnimUpdateCont
 	}
 }
 
-void UL2MoverAnimInstance::OnBecomeRelevant_LandRecoveryState(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
+void UL2MoverAnimInstance::OnBecomeRelevant_LandRecoveryState(const FAnimUpdateContext& Context,
+                                                              const FAnimNodeReference& Node)
 {
 	const float TimeFallingClamp01 = UKismetMathLibrary::MapRangeClamped(TimeFalling, 0.f, 0.4f, 0.1f, 0.85f);
 	LandRecoveryAdditiveAlpha = bIsCrouching ? TimeFallingClamp01 * 0.5f : TimeFallingClamp01;
 }
 
-void UL2MoverAnimInstance::OnBecomeRelevant_SetUpIdleTransition(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
+void UL2MoverAnimInstance::OnBecomeRelevant_SetUpIdleTransition(const FAnimUpdateContext& Context,
+                                                                const FAnimNodeReference& Node)
 {
 	//设置蹲下 或 站起的动画
 	bool bResult = false;
@@ -616,14 +633,17 @@ void UL2MoverAnimInstance::OnBecomeRelevant_SetUpIdleTransition(const FAnimUpdat
 		UL2MovementDefinition* MovementDefinition = GetCurrentMovementDefinition();
 		if (IsValid(MovementDefinition))
 		{
-			UAnimSequenceBase* TempAnim = bIsCrouching ? MovementDefinition->GroundedSettings.Idle_To_Crouch : MovementDefinition->GroundedSettings.Crouch_To_Idle;
+			UAnimSequenceBase* TempAnim = bIsCrouching
+				                              ? MovementDefinition->GroundedSettings.Idle_To_Crouch
+				                              : MovementDefinition->GroundedSettings.Crouch_To_Idle;
 			USequencePlayerLibrary::SetSequence(SequencePlayer, TempAnim);
 		}
 	}
 }
 
 
-void UL2MoverAnimInstance::OnUpdate_UpdateLocomotionStateMachine_Implementation(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
+void UL2MoverAnimInstance::OnUpdate_UpdateLocomotionStateMachine_Implementation(
+	const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
 {
 	if (const IAnimClassInterface* AnimBlueprintClass = IAnimClassInterface::GetFromClass(this->GetClass()))
 	{
@@ -640,7 +660,8 @@ void UL2MoverAnimInstance::OnUpdate_UpdateLocomotionStateMachine_Implementation(
 				ULinkedAnimGraphLibrary::ConvertToLinkedAnimGraphPure(StartAnimNode, LinkedAnimGraphReference, Result);
 
 				//获取AnimInstance
-				UAnimInstance* NewAnimInstance = ULinkedAnimGraphLibrary::GetLinkedAnimInstance(LinkedAnimGraphReference);
+				UAnimInstance* NewAnimInstance = ULinkedAnimGraphLibrary::GetLinkedAnimInstance(
+					LinkedAnimGraphReference);
 				if (!bFirstUpdate)
 				{
 					bLinkedLayerChanged = (NewAnimInstance != LastLinkedLayer);
@@ -659,7 +680,7 @@ void UL2MoverAnimInstance::OnUpdate_UpdateIdleAnim(const FAnimUpdateContext& Con
 	USequencePlayerLibrary::ConvertToSequencePlayerPure(Node, SequencePlayer, bResult);
 	if (bResult)
 	{
-		const FL2MovementFragment_Idle& IdleData = GetMovementFragment_Idle();
+		const FL2Mover_AnimData_Idle& IdleData = GetMovementFragment_Idle();
 		if (IsValid(IdleData.Idle))
 		{
 			USequencePlayerLibrary::SetSequenceWithInertialBlending(Context, SequencePlayer, IdleData.Idle, 0.2f);
@@ -667,7 +688,8 @@ void UL2MoverAnimInstance::OnUpdate_UpdateIdleAnim(const FAnimUpdateContext& Con
 	}
 }
 
-void UL2MoverAnimInstance::OnBecomeRelevant_SetUpIdleBreakAnim(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
+void UL2MoverAnimInstance::OnBecomeRelevant_SetUpIdleBreakAnim(const FAnimUpdateContext& Context,
+                                                               const FAnimNodeReference& Node)
 {
 	//设置 IdleBreaks 动画
 	bool bResult = false;
@@ -675,10 +697,12 @@ void UL2MoverAnimInstance::OnBecomeRelevant_SetUpIdleBreakAnim(const FAnimUpdate
 	USequencePlayerLibrary::ConvertToSequencePlayerPure(Node, SequencePlayer, bResult);
 	if (bResult)
 	{
-		const FL2MovementFragment_Idle& IdleData = GetMovementFragment_Idle();
+		const FL2Mover_AnimData_Idle& IdleData = GetMovementFragment_Idle();
 		if (IdleData.Idle_Breaks.Num() > 0)
 		{
-			UAnimSequenceBase* TempAnim = IdleData.Idle_Breaks.IsValidIndex(CurrentIdleBreakIndex) ? IdleData.Idle_Breaks[CurrentIdleBreakIndex] : IdleData.Idle_Breaks[0];
+			UAnimSequenceBase* TempAnim = IdleData.Idle_Breaks.IsValidIndex(CurrentIdleBreakIndex)
+				                              ? IdleData.Idle_Breaks[CurrentIdleBreakIndex]
+				                              : IdleData.Idle_Breaks[0];
 			USequencePlayerLibrary::SetSequence(SequencePlayer, TempAnim);
 
 			CurrentIdleBreakIndex++;
@@ -690,7 +714,8 @@ void UL2MoverAnimInstance::OnBecomeRelevant_SetUpIdleBreakAnim(const FAnimUpdate
 	}
 }
 
-void UL2MoverAnimInstance::OnBecomeRelevant_SetUpStartAnim(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
+void UL2MoverAnimInstance::OnBecomeRelevant_SetUpStartAnim(const FAnimUpdateContext& Context,
+                                                           const FAnimNodeReference& Node)
 {
 	//设置 Walk Start 动画
 
@@ -735,7 +760,8 @@ void UL2MoverAnimInstance::OnUpdate_UpdateStartAnim(const FAnimUpdateContext& Co
 
 		FVector2D PlayRateClamp_Start = GetPlayRateClampStart();
 		//播放速率限制. 平滑地增加最小播放速率速度，因为我们混合了跨步扭曲
-		PlayRateClamp_Start.X = FMath::Lerp(StrideWarpingBlendInDurationScaled, PlayRateClamp_Start.X, StrideWarpingStartAlpha);
+		PlayRateClamp_Start.X = FMath::Lerp(StrideWarpingBlendInDurationScaled, PlayRateClamp_Start.X,
+		                                    StrideWarpingStartAlpha);
 		const FVector2D LocalPlayRateClamp = FVector2D(PlayRateClamp_Start.X, PlayRateClamp_Start.Y);
 
 		//距离匹配
@@ -771,7 +797,8 @@ void UL2MoverAnimInstance::OnUpdate_UpdateCycleAnim(const FAnimUpdateContext& Co
 	}
 }
 
-void UL2MoverAnimInstance::OnBecomeRelevant_SetUpStopAnim(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
+void UL2MoverAnimInstance::OnBecomeRelevant_SetUpStopAnim(const FAnimUpdateContext& Context,
+                                                          const FAnimNodeReference& Node)
 {
 	//更新 Stop 动画
 
@@ -786,7 +813,8 @@ void UL2MoverAnimInstance::OnBecomeRelevant_SetUpStopAnim(const FAnimUpdateConte
 
 		if (!ShouldDistanceMatchStop())
 		{
-			UAnimDistanceMatchingLibrary::DistanceMatchToTarget(SequenceEvaluator, 0.f, L2Mover_AnimCurveName::LocomotionDistance);
+			UAnimDistanceMatchingLibrary::DistanceMatchToTarget(SequenceEvaluator, 0.f,
+			                                                    L2Mover_AnimCurveName::LocomotionDistance);
 		}
 	}
 }
@@ -807,7 +835,8 @@ void UL2MoverAnimInstance::OnUpdate_UpdateStopAnim(const FAnimUpdateContext& Con
 			if (DistanceToMatch > 0.f)
 			{
 				//如果预测停止距离大于0，则距离匹配到停止点
-				UAnimDistanceMatchingLibrary::DistanceMatchToTarget(SequenceEvaluator, DistanceToMatch, L2Mover_AnimCurveName::LocomotionDistance);
+				UAnimDistanceMatchingLibrary::DistanceMatchToTarget(SequenceEvaluator, DistanceToMatch,
+				                                                    L2Mover_AnimCurveName::LocomotionDistance);
 			}
 			else
 			{
@@ -823,7 +852,8 @@ void UL2MoverAnimInstance::OnUpdate_UpdateStopAnim(const FAnimUpdateContext& Con
 	}
 }
 
-void UL2MoverAnimInstance::OnBecomeRelevant_SetUpPivotAnim(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
+void UL2MoverAnimInstance::OnBecomeRelevant_SetUpPivotAnim(const FAnimUpdateContext& Context,
+                                                           const FAnimNodeReference& Node)
 {
 	//设置折返运动
 
@@ -862,7 +892,8 @@ void UL2MoverAnimInstance::OnUpdate_UpdatePivotAnim(const FAnimUpdateContext& Co
 			UAnimSequenceBase* DesiredPivotAnim = GetDesiredPivotSequence(LocalVelocityDirection);
 			if (DesiredPivotAnim && DesiredPivotAnim != USequenceEvaluatorLibrary::GetSequence(SequenceEvaluator))
 			{
-				USequenceEvaluatorLibrary::SetSequenceWithInertialBlending(Context, SequenceEvaluator, DesiredPivotAnim, 0.2f);
+				USequenceEvaluatorLibrary::SetSequenceWithInertialBlending(
+					Context, SequenceEvaluator, DesiredPivotAnim, 0.2f);
 				PivotStartingAcceleration = LocalAcceleration2D; //更新折返加速度
 			}
 		}
@@ -883,22 +914,26 @@ void UL2MoverAnimInstance::OnUpdate_UpdatePivotAnim(const FAnimUpdateContext& Co
 		else
 		{
 			//更新步幅匹配折返权重
-			StrideWarpingPivotAlpha = UKismetMathLibrary::MapRangeClamped(ExplicitTime - TimeAtPivotStop - StrideWarpingBlendInStartOffset,
-			                                                              0.f, StrideWarpingBlendInDurationScaled,
-			                                                              0.f, 1.f);
+			StrideWarpingPivotAlpha = UKismetMathLibrary::MapRangeClamped(
+				ExplicitTime - TimeAtPivotStop - StrideWarpingBlendInStartOffset,
+				0.f, StrideWarpingBlendInDurationScaled,
+				0.f, 1.f);
 			const FVector2D PlayRateClampPivots = GetPlayRateClampPivot();
 			//一旦加速度和速度对齐，角色就会加速远离枢轴点，因此我们只需按动画其余部分所行进的距离提前时间				
 			//当我们融入步幅适配时，平滑地提高最低播放速度
-			const FVector2D NewPlayRateClamp = FVector2D(FMath::Lerp(0.2f, PlayRateClampPivots.X, StrideWarpingPivotAlpha),
-			                                             PlayRateClampPivots.Y);
+			const FVector2D NewPlayRateClamp = FVector2D(
+				FMath::Lerp(0.2f, PlayRateClampPivots.X, StrideWarpingPivotAlpha),
+				PlayRateClampPivots.Y);
 			UAnimDistanceMatchingLibrary::AdvanceTimeByDistanceMatching(Context, SequenceEvaluator,
 			                                                            DisplacementSinceLastUpdate,
-			                                                            L2Mover_AnimCurveName::LocomotionDistance, NewPlayRateClamp);
+			                                                            L2Mover_AnimCurveName::LocomotionDistance,
+			                                                            NewPlayRateClamp);
 		}
 	}
 }
 
-void UL2MoverAnimInstance::OnBecomeRelevant_SetUpFallLandAnim(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
+void UL2MoverAnimInstance::OnBecomeRelevant_SetUpFallLandAnim(const FAnimUpdateContext& Context,
+                                                              const FAnimNodeReference& Node)
 {
 	bool bResult = false;
 	FSequenceEvaluatorReference SequenceEvaluator;
@@ -910,18 +945,21 @@ void UL2MoverAnimInstance::OnBecomeRelevant_SetUpFallLandAnim(const FAnimUpdateC
 	}
 }
 
-void UL2MoverAnimInstance::OnUpdate_UpdateFallLandAnim(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
+void UL2MoverAnimInstance::OnUpdate_UpdateFallLandAnim(const FAnimUpdateContext& Context,
+                                                       const FAnimNodeReference& Node)
 {
 	bool bResult = false;
 	FSequenceEvaluatorReference SequenceEvaluator;
 	USequenceEvaluatorLibrary::ConvertToSequenceEvaluatorPure(Node, SequenceEvaluator, bResult);
 	if (bResult)
 	{
-		UAnimDistanceMatchingLibrary::DistanceMatchToTarget(SequenceEvaluator, GroundDistance, L2Mover_AnimCurveName::LocomotionDistance);
+		UAnimDistanceMatchingLibrary::DistanceMatchToTarget(SequenceEvaluator, GroundDistance,
+		                                                    L2Mover_AnimCurveName::LocomotionDistance);
 	}
 }
 
-void UL2MoverAnimInstance::OnBecomeRelevant_SetUpTurnInPlaceAnim(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
+void UL2MoverAnimInstance::OnBecomeRelevant_SetUpTurnInPlaceAnim(const FAnimUpdateContext& Context,
+                                                                 const FAnimNodeReference& Node)
 {
 	bool bResult = false;
 	FSequenceEvaluatorReference SequenceEvaluator;
@@ -934,7 +972,8 @@ void UL2MoverAnimInstance::OnBecomeRelevant_SetUpTurnInPlaceAnim(const FAnimUpda
 	}
 }
 
-void UL2MoverAnimInstance::OnUpdate_UpdateTurnInPlaceAnim(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
+void UL2MoverAnimInstance::OnUpdate_UpdateTurnInPlaceAnim(const FAnimUpdateContext& Context,
+                                                          const FAnimNodeReference& Node)
 {
 	bool bResult = false;
 	FSequenceEvaluatorReference SequenceEvaluator;
@@ -943,7 +982,8 @@ void UL2MoverAnimInstance::OnUpdate_UpdateTurnInPlaceAnim(const FAnimUpdateConte
 	{
 		//根据旋转方向 更新 TurnInPlace 动画
 		USequenceEvaluatorLibrary::SetSequenceWithInertialBlending(Context, SequenceEvaluator,
-		                                                           SelectTurnInPlaceAnimation(TurnInPlaceRotationDirection),
+		                                                           SelectTurnInPlaceAnimation(
+			                                                           TurnInPlaceRotationDirection),
 		                                                           0.2f);
 		//更新原地转身动画时间
 		TurnInPlaceAnimTime = UAnimExecutionContextLibrary::GetDeltaTime(Context) + TurnInPlaceAnimTime;
@@ -953,19 +993,22 @@ void UL2MoverAnimInstance::OnUpdate_UpdateTurnInPlaceAnim(const FAnimUpdateConte
 	}
 }
 
-void UL2MoverAnimInstance::OnBecomeRelevant_SetUpTurnInPlaceRotationState(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
+void UL2MoverAnimInstance::OnBecomeRelevant_SetUpTurnInPlaceRotationState(
+	const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
 {
 	//更新 原地转动的旋转方向
 	TurnInPlaceRotationDirection = UKismetMathLibrary::SignOfFloat(RootYawOffset) * -1.f;
 }
 
-void UL2MoverAnimInstance::OnBecomeRelevant_SetUpTurnInPlaceRecoveryState(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
+void UL2MoverAnimInstance::OnBecomeRelevant_SetUpTurnInPlaceRecoveryState(
+	const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
 {
 	//原地转向的恢复方向
 	TurnInPlaceRecoveryDirection = TurnInPlaceRotationDirection;
 }
 
-void UL2MoverAnimInstance::OnUpdate_UpdateTurnInPlaceRecoveryAnim(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
+void UL2MoverAnimInstance::OnUpdate_UpdateTurnInPlaceRecoveryAnim(const FAnimUpdateContext& Context,
+                                                                  const FAnimNodeReference& Node)
 {
 	bool bResult = false;
 	FSequencePlayerReference SequencePlayer;
@@ -974,7 +1017,8 @@ void UL2MoverAnimInstance::OnUpdate_UpdateTurnInPlaceRecoveryAnim(const FAnimUpd
 	{
 		//更新原地转身动画
 		USequencePlayerLibrary::SetSequenceWithInertialBlending(Context, SequencePlayer,
-		                                                        SelectTurnInPlaceAnimation(TurnInPlaceRecoveryDirection),
+		                                                        SelectTurnInPlaceAnimation(
+			                                                        TurnInPlaceRecoveryDirection),
 		                                                        0.2f);
 	}
 }
@@ -982,7 +1026,7 @@ void UL2MoverAnimInstance::OnUpdate_UpdateTurnInPlaceRecoveryAnim(const FAnimUpd
 UAnimSequence* UL2MoverAnimInstance::SelectTurnInPlaceAnimation(float Direction)
 {
 	UAnimSequence* TempAnim = nullptr;
-	const FL2MovementFragment_TurnInPlace& TurnInPlaceData = GetMovementFragment_TurnInPlace();
+	const FL2Mover_AnimData_TurnInPlace& TurnInPlaceData = GetMovementFragment_TurnInPlace();
 	if (TurnInPlaceData.IsAnimValid())
 	{
 		TempAnim = Direction > 0.f ? TurnInPlaceData.TurnInPlace_R_90 : TurnInPlaceData.TurnInPlace_L_90;
@@ -993,7 +1037,7 @@ UAnimSequence* UL2MoverAnimInstance::SelectTurnInPlaceAnimation(float Direction)
 
 bool UL2MoverAnimInstance::CanPlayIdleBreak() const
 {
-	const FL2MovementFragment_Idle& IdleData = GetMovementFragment_Idle();
+	const FL2Mover_AnimData_Idle& IdleData = GetMovementFragment_Idle();
 	if (!IdleData.IsAnimValid())
 		return false;
 
@@ -1049,7 +1093,7 @@ bool UL2MoverAnimInstance::ShouldDistanceMatchStop() const
 
 UAnimSequenceBase* UL2MoverAnimInstance::GetDesiredPivotSequence(EL2MovementDirection InDirection) const
 {
-	const FL2MovementFragment_Pivot& PivotData = GetMovementFragment_Pivot();
+	const FL2Mover_AnimData_Pivot& PivotData = GetMovementFragment_Pivot();
 	return PivotData.GetSequenceByDirection(InDirection);
 }
 
@@ -1069,7 +1113,7 @@ UL2MovementDefinition* UL2MoverAnimInstance::GetCurrentMovementDefinition() cons
 	return MovementDefinition;
 }
 
-FL2MovementFragment_Movement* UL2MoverAnimInstance::GetCurrentMovementSet() const
+FL2Mover_AnimData_Movement* UL2MoverAnimInstance::GetCurrentMovementSet() const
 {
 	UL2MovementDefinition* MovementDefinition = GetCurrentMovementDefinition();
 	if (!IsValid(MovementDefinition))
@@ -1080,129 +1124,128 @@ FL2MovementFragment_Movement* UL2MoverAnimInstance::GetCurrentMovementSet() cons
 	return MovementDefinition->FindMovementSet(MovementSetName);
 }
 
-FL2MovementFragment_Idle UL2MoverAnimInstance::GetMovementFragment_Idle() const
+FL2Mover_AnimData_Idle UL2MoverAnimInstance::GetMovementFragment_Idle() const
 {
-	const FL2MovementFragment_Movement* MovementSet = GetCurrentMovementSet();
+	const FL2Mover_AnimData_Movement* MovementSet = GetCurrentMovementSet();
 	if (!MovementSet || !MovementSet->Idle.IsValid())
 	{
-		FL2MovementFragment_Idle Idle;
+		FL2Mover_AnimData_Idle Idle;
 		return Idle;
 	}
-
-	return MovementSet->Idle.Get<FL2MovementFragment_Idle>();
+	return MovementSet->Idle.Get<FL2Mover_AnimData_Idle>();
 }
 
-FL2MovementFragment_Start UL2MoverAnimInstance::GetMovementFragment_Start() const
+FL2Mover_AnimData_Start_VelocityDirection UL2MoverAnimInstance::GetMovementFragment_Start() const
 {
-	const FL2MovementFragment_Movement* MovementSet = GetCurrentMovementSet();
+	const FL2Mover_AnimData_Movement* MovementSet = GetCurrentMovementSet();
 	if (!MovementSet || !MovementSet->Start.IsValid())
 	{
-		FL2MovementFragment_Start Start;
+		FL2Mover_AnimData_Start_VelocityDirection Start;
 		return Start;
 	}
-	return MovementSet->Start.Get<FL2MovementFragment_Start>();
+	return MovementSet->Start.Get<FL2Mover_AnimData_Start_VelocityDirection>();
 }
 
-FL2MovementFragment_Start_4Way UL2MoverAnimInstance::GetMovementFragment_StartForwardFacing() const
+FL2Mover_AnimData_Start_LookingDirection UL2MoverAnimInstance::GetMovementFragment_StartForwardFacing() const
 {
-	const FL2MovementFragment_Movement* MovementSet = GetCurrentMovementSet();
+	const FL2Mover_AnimData_Movement* MovementSet = GetCurrentMovementSet();
 	if (!MovementSet || !MovementSet->StartForwardFacing.IsValid())
 	{
-		FL2MovementFragment_Start_4Way StartForwardFacing;
+		FL2Mover_AnimData_Start_LookingDirection StartForwardFacing;
 		return StartForwardFacing;
 	}
-	return MovementSet->StartForwardFacing.Get<FL2MovementFragment_Start_4Way>();
+	return MovementSet->StartForwardFacing.Get<FL2Mover_AnimData_Start_LookingDirection>();
 }
 
-FL2MovementFragment_Cycle UL2MoverAnimInstance::GetMovementFragment_Cycle() const
+FL2Mover_AnimData_Cycle UL2MoverAnimInstance::GetMovementFragment_Cycle() const
 {
-	const FL2MovementFragment_Movement* MovementSet = GetCurrentMovementSet();
+	const FL2Mover_AnimData_Movement* MovementSet = GetCurrentMovementSet();
 	if (!MovementSet || !MovementSet->Cycle.IsValid())
 	{
-		FL2MovementFragment_Cycle Cycle;
+		FL2Mover_AnimData_Cycle Cycle;
 		return Cycle;
 	}
-	return MovementSet->Cycle.Get<FL2MovementFragment_Cycle>();
+	return MovementSet->Cycle.Get<FL2Mover_AnimData_Cycle>();
 }
 
-FL2MovementFragment_Stop UL2MoverAnimInstance::GetMovementFragment_Stop() const
+FL2Mover_AnimData_Stop UL2MoverAnimInstance::GetMovementFragment_Stop() const
 {
-	const FL2MovementFragment_Movement* MovementSet = GetCurrentMovementSet();
+	const FL2Mover_AnimData_Movement* MovementSet = GetCurrentMovementSet();
 	if (!MovementSet || !MovementSet->Stop.IsValid())
 	{
-		FL2MovementFragment_Stop Stop;
+		FL2Mover_AnimData_Stop Stop;
 		return Stop;
 	}
-	return MovementSet->Stop.Get<FL2MovementFragment_Stop>();
+	return MovementSet->Stop.Get<FL2Mover_AnimData_Stop>();
 }
 
-FL2MovementFragment_Sprint UL2MoverAnimInstance::GetMovementFragment_Sprint() const
+FL2Mover_AnimData_Sprint UL2MoverAnimInstance::GetMovementFragment_Sprint() const
 {
-	const FL2MovementFragment_Movement* MovementSet = GetCurrentMovementSet();
+	const FL2Mover_AnimData_Movement* MovementSet = GetCurrentMovementSet();
 	if (!MovementSet || !MovementSet->Sprint.IsValid())
 	{
-		FL2MovementFragment_Sprint Sprint;
+		FL2Mover_AnimData_Sprint Sprint;
 		return Sprint;
 	}
-	return MovementSet->Sprint.Get<FL2MovementFragment_Sprint>();
+	return MovementSet->Sprint.Get<FL2Mover_AnimData_Sprint>();
 }
 
-FL2MovementFragment_Pivot UL2MoverAnimInstance::GetMovementFragment_Pivot() const
+FL2Mover_AnimData_Pivot UL2MoverAnimInstance::GetMovementFragment_Pivot() const
 {
-	const FL2MovementFragment_Movement* MovementSet = GetCurrentMovementSet();
+	const FL2Mover_AnimData_Movement* MovementSet = GetCurrentMovementSet();
 	if (!MovementSet || !MovementSet->Pivot.IsValid())
 	{
-		FL2MovementFragment_Pivot Pivot;
+		FL2Mover_AnimData_Pivot Pivot;
 		return Pivot;
 	}
-	return MovementSet->Pivot.Get<FL2MovementFragment_Pivot>();
+	return MovementSet->Pivot.Get<FL2Mover_AnimData_Pivot>();
 }
 
-FL2MovementFragment_TurnInPlace UL2MoverAnimInstance::GetMovementFragment_TurnInPlace() const
+FL2Mover_AnimData_TurnInPlace UL2MoverAnimInstance::GetMovementFragment_TurnInPlace() const
 {
-	const FL2MovementFragment_Movement* MovementSet = GetCurrentMovementSet();
+	const FL2Mover_AnimData_Movement* MovementSet = GetCurrentMovementSet();
 	if (!MovementSet || !MovementSet->TurnInPlace.IsValid())
 	{
-		FL2MovementFragment_TurnInPlace TurnInPlace;
+		FL2Mover_AnimData_TurnInPlace TurnInPlace;
 		return TurnInPlace;
 	}
-	return MovementSet->TurnInPlace.Get<FL2MovementFragment_TurnInPlace>();
+	return MovementSet->TurnInPlace.Get<FL2Mover_AnimData_TurnInPlace>();
 }
 
-FL2MovementFragment_Jump UL2MoverAnimInstance::GetMovementFragment_Jump() const
+FL2Mover_AnimData_Jump UL2MoverAnimInstance::GetMovementFragment_Jump() const
 {
-	const FL2MovementFragment_Movement* MovementSet = GetCurrentMovementSet();
+	const FL2Mover_AnimData_Movement* MovementSet = GetCurrentMovementSet();
 	if (!MovementSet || !MovementSet->Jump.IsValid())
 	{
-		FL2MovementFragment_Jump Jump;
+		FL2Mover_AnimData_Jump Jump;
 		return Jump;
 	}
-	return MovementSet->Jump.Get<FL2MovementFragment_Jump>();
+	return MovementSet->Jump.Get<FL2Mover_AnimData_Jump>();
 }
 
-FL2MovementFragment_AimOffset UL2MoverAnimInstance::GetMovementFragment_AimOffset() const
+FL2Mover_AnimData_AimOffset UL2MoverAnimInstance::GetMovementFragment_AimOffset() const
 {
-	const FL2MovementFragment_Movement* MovementSet = GetCurrentMovementSet();
+	const FL2Mover_AnimData_Movement* MovementSet = GetCurrentMovementSet();
 	if (!MovementSet || !MovementSet->AimOffset.IsValid())
 	{
-		FL2MovementFragment_AimOffset AimOffset;
+		FL2Mover_AnimData_AimOffset AimOffset;
 		return AimOffset;
 	}
-	return MovementSet->AimOffset.Get<FL2MovementFragment_AimOffset>();
+	return MovementSet->AimOffset.Get<FL2Mover_AnimData_AimOffset>();
 }
 
 TArray<UAnimSequence*> UL2MoverAnimInstance::GetIdleBreaks() const
 {
-	const FL2MovementFragment_Idle& IdleData = GetMovementFragment_Idle();
+	const FL2Mover_AnimData_Idle& IdleData = GetMovementFragment_Idle();
 	return IdleData.Idle_Breaks;
 }
 
 UAnimSequenceBase* UL2MoverAnimInstance::GetStartAnim() const
 {
 	UAnimSequence* OutSequence = nullptr;
-	const FL2MovementFragment_Sprint& SprintData = GetMovementFragment_Sprint();
-	const FL2MovementFragment_Start& StartData = GetMovementFragment_Start();
-	const FL2MovementFragment_Start_4Way& StartForwardFacingData = GetMovementFragment_StartForwardFacing();
+	const FL2Mover_AnimData_Sprint& SprintData = GetMovementFragment_Sprint();
+	const FL2Mover_AnimData_Start_VelocityDirection& StartData = GetMovementFragment_Start();
+	const FL2Mover_AnimData_Start_LookingDirection& StartForwardFacingData = GetMovementFragment_StartForwardFacing();
 
 	if (RotationMode == L2MoverRotationMode::VelocityDirection)
 	{
@@ -1236,8 +1279,8 @@ UAnimSequenceBase* UL2MoverAnimInstance::GetStartAnim() const
 UAnimSequenceBase* UL2MoverAnimInstance::GetCycleAnim() const
 {
 	UAnimSequence* OutSequence = nullptr;
-	const FL2MovementFragment_Sprint& SprintData = GetMovementFragment_Sprint();
-	const FL2MovementFragment_Cycle& CycleData = GetMovementFragment_Cycle();
+	const FL2Mover_AnimData_Sprint& SprintData = GetMovementFragment_Sprint();
+	const FL2Mover_AnimData_Cycle& CycleData = GetMovementFragment_Cycle();
 
 	if (bIsSprinting)
 	{
@@ -1260,8 +1303,8 @@ UAnimSequenceBase* UL2MoverAnimInstance::GetCycleAnim() const
 UAnimSequenceBase* UL2MoverAnimInstance::GetStopAnim() const
 {
 	UAnimSequence* OutSequence = nullptr;
-	const FL2MovementFragment_Sprint& SprintData = GetMovementFragment_Sprint();
-	const FL2MovementFragment_Stop& StopData = GetMovementFragment_Stop();
+	const FL2Mover_AnimData_Sprint& SprintData = GetMovementFragment_Sprint();
+	const FL2Mover_AnimData_Stop& StopData = GetMovementFragment_Stop();
 	if (bIsSprinting)
 	{
 		if (SprintData.IsAnimValid())
@@ -1283,7 +1326,7 @@ UAnimSequenceBase* UL2MoverAnimInstance::GetStopAnim() const
 UAnimSequenceBase* UL2MoverAnimInstance::GetPivotAnim() const
 {
 	UAnimSequence* OutSequence = nullptr;
-	const FL2MovementFragment_Pivot& PivotData = GetMovementFragment_Pivot();
+	const FL2Mover_AnimData_Pivot& PivotData = GetMovementFragment_Pivot();
 	if (PivotData.IsAnimValid())
 	{
 		OutSequence = PivotData.GetSequenceByDirection(CardinalDirectionFromAcceleration);
@@ -1293,8 +1336,8 @@ UAnimSequenceBase* UL2MoverAnimInstance::GetPivotAnim() const
 
 FVector2D UL2MoverAnimInstance::GetPlayRateClampStart() const
 {
-	const FL2MovementFragment_Start& StartData = GetMovementFragment_Start();
-	const FL2MovementFragment_Sprint& SprintData = GetMovementFragment_Sprint();
+	const FL2Mover_AnimData_Start_VelocityDirection& StartData = GetMovementFragment_Start();
+	const FL2Mover_AnimData_Sprint& SprintData = GetMovementFragment_Sprint();
 
 	FVector2D Result;
 	if (bIsSprinting && SprintData.IsAnimValid())
@@ -1315,8 +1358,8 @@ FVector2D UL2MoverAnimInstance::GetPlayRateClampStart() const
 
 FVector2D UL2MoverAnimInstance::GetPlayRateClampCycle() const
 {
-	const FL2MovementFragment_Cycle& CycleData = GetMovementFragment_Cycle();
-	const FL2MovementFragment_Sprint& SprintData = GetMovementFragment_Sprint();
+	const FL2Mover_AnimData_Cycle& CycleData = GetMovementFragment_Cycle();
+	const FL2Mover_AnimData_Sprint& SprintData = GetMovementFragment_Sprint();
 
 	FVector2D Result;
 	if (bIsSprinting && SprintData.IsAnimValid())
@@ -1337,7 +1380,7 @@ FVector2D UL2MoverAnimInstance::GetPlayRateClampCycle() const
 
 FVector2D UL2MoverAnimInstance::GetPlayRateStopCycle() const
 {
-	const FL2MovementFragment_Stop& StopData = GetMovementFragment_Stop();
+	const FL2Mover_AnimData_Stop& StopData = GetMovementFragment_Stop();
 	FVector2D Result;
 	if (StopData.IsAnimValid())
 	{
@@ -1352,8 +1395,8 @@ FVector2D UL2MoverAnimInstance::GetPlayRateStopCycle() const
 
 FVector2D UL2MoverAnimInstance::GetPlayRateClampPivot() const
 {
-	const FL2MovementFragment_Pivot& PivotData = GetMovementFragment_Pivot();
-	const FL2MovementFragment_Sprint& SprintData = GetMovementFragment_Sprint();
+	const FL2Mover_AnimData_Pivot& PivotData = GetMovementFragment_Pivot();
+	const FL2Mover_AnimData_Sprint& SprintData = GetMovementFragment_Sprint();
 	FVector2D Result;
 	if (bIsSprinting && SprintData.IsAnimValid())
 	{
