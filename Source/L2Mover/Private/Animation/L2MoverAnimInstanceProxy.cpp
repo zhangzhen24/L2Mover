@@ -3,7 +3,8 @@
 
 #include "Animation/L2MoverAnimInstanceProxy.h"
 
-#include "Animation/L2MoverAnimInstance.h"
+#include "Animation/L2MoverAnimLayer_Locomotion.h"
+#include "Animation/L2MoverMainAnimInstance.h"
 
 FL2MoverAnimaInstanceProxy::FL2MoverAnimaInstanceProxy(UAnimInstance* AnimationInstance)
 	: FAnimInstanceProxy{AnimationInstance}
@@ -14,12 +15,19 @@ void FL2MoverAnimaInstanceProxy::PostUpdate(UAnimInstance* AnimationInstance) co
 {
 	FAnimInstanceProxy::PostUpdate(AnimationInstance);
 
-	// Epic does not allow to override the UAnimInstance::PostUpdateAnimation()
-	// function in child classes, so we have to resort to this workaround.
+	//Epic 不允许覆盖 UAnimInstance：:P ostUpdateAnimation（）函数，因此我们必须采用这种解决方法。
 
-	auto* L2MoverAnimInstance{Cast<UL2MoverAnimInstance>(AnimationInstance)};
-	if (IsValid(L2MoverAnimInstance))
+	//MainAnimInstance
+	auto* L2MoverMainAnimInstance{Cast<UL2MoverMainAnimInstance>(AnimationInstance)};
+	if (IsValid(L2MoverMainAnimInstance))
 	{
-		L2MoverAnimInstance->NativePostUpdateAnimation();
+		L2MoverMainAnimInstance->NativePostUpdateAnimation();
+	}
+
+	//AnimLayer
+	auto* L2MoverAnimLayer{Cast<UL2MoverAnimLayer>(AnimationInstance)};
+	if (IsValid(L2MoverAnimLayer))
+	{
+		L2MoverAnimLayer->NativePostUpdateAnimation();
 	}
 }

@@ -1,18 +1,17 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Settings/L2MoverBaseSettings.h"
+#include "Settings/L2MoverMovementControlSettings.h"
 
 #include "L2MoverGameplayTags.h"
 
 
 /////////////////////////////////////////////////////
 /// FL2MoverGaitSpeedSettings
-FL2MoverGaitSpeedSettings::FL2MoverGaitSpeedSettings()
-{
-}
-
-FL2MoverGaitSpeedSettings::FL2MoverGaitSpeedSettings(float InMaxSpeed, float InMaxAcceleration, float InBreakingDecelerationWalking, const FRotator& InRotationRate)
+FL2MoverGaitSpeedSettings::FL2MoverGaitSpeedSettings(const float InMaxSpeed,
+                                                     const float InMaxAcceleration,
+                                                     const float InBreakingDecelerationWalking,
+                                                     const FRotator& InRotationRate)
 {
 	MaxSpeed = InMaxSpeed;
 	MaxAcceleration = InMaxAcceleration;
@@ -21,8 +20,8 @@ FL2MoverGaitSpeedSettings::FL2MoverGaitSpeedSettings(float InMaxSpeed, float InM
 }
 
 /////////////////////////////////////////////////////
-/// FL2MoverBaseSettings
-FL2MoverGaitSpeedSettings FL2MoverBaseSettings::GetGaitSpeedSettings(const FGameplayTag& Gait) const
+/// FL2MoverMovementControlSettings
+FL2MoverGaitSpeedSettings FL2MoverMovementControlSettings::FindGaitSpeedSettings(const FGameplayTag& Gait) const
 {
 	if (Gait == L2MoverGait::Walking)
 	{

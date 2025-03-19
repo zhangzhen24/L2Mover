@@ -4,10 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+#include "L2MoverAnimLayer.h"
 #include "L2MoverGameplayTags.h"
 #include "Animation/AnimInstance.h"
 #include "Data/L2MoverMovementEnums.h"
-#include "L2MoverAnimInstance.generated.h"
+#include "L2MoverAnimLayer_Locomotion.generated.h"
 
 
 class ACharacter;
@@ -17,7 +18,6 @@ class UL2MovementDefinition;
 
 struct FAnimUpdateContext;
 struct FAnimNodeReference;
-struct FL2Mover_AnimData_Movement;
 struct FL2Mover_AnimData;
 struct FL2Mover_AnimData_Idle;
 struct FL2Mover_AnimData_Start_VelocityDirection;
@@ -29,6 +29,7 @@ struct FL2Mover_AnimData_Pivot;
 struct FL2Mover_AnimData_TurnInPlace;
 struct FL2Mover_AnimData_Jump;
 struct FL2Mover_AnimData_AimOffset;
+struct FL2Mover_MovementSet;
 
 
 namespace L2Mover_AnimCurveName
@@ -45,22 +46,20 @@ namespace L2Mover_AnimCurveName
  * 
  */
 UCLASS()
-class L2MOVER_API UL2MoverAnimInstance : public UAnimInstance
+class L2MOVER_API UL2MoverAnimLayer_Locomotion : public UL2MoverAnimLayer
 {
 	GENERATED_BODY()
 
 public:
-	UL2MoverAnimInstance(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	UL2MoverAnimLayer_Locomotion(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	// -- Begin AnimInstance Interface
-	virtual void NativeBeginPlay() override;
 	virtual void NativeInitializeAnimation() override;
-	virtual void NativePostUpdateAnimation();
+	virtual void NativeUninitializeAnimation() override;
+	virtual void NativeBeginPlay() override;
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 	virtual void NativeThreadSafeUpdateAnimation(float DeltaSeconds) override;
-	virtual FAnimInstanceProxy* CreateAnimInstanceProxy() override;
 	// -- End AnimInstance Interface
-
 
 protected:
 	void Initialization();
@@ -100,22 +99,30 @@ protected:
 
 protected:
 	void UpdateLocationData(float DeltaTime);
+
 	void UpdateRotationData(float DeltaTime);
+
 	void UpdateVelocityData(float DeltaTime);
+
 	void UpdateAccelerationData(float DeltaTime);
+
 	void UpdateCharacterStateData(float DeltaTime);
+
 	void UpdateBlendWeightData(float DeltaTime);
+
 	void UpdateAimData(float DeltaTime);
+
 	void UpdateJumpFallData(float DeltaTime);
+
 	void UpdateWallDetectionHeuristic(float DeltaTime);
+
 	void UpdateUpperBodyAlpha(float DeltaTime);
+
 	void UpdateInWall();
+
 	void UpdateCheckAnimValid(float DeltaTime);
 
 protected:
-	UPROPERTY(BlueprintReadOnly, meta=(BlueprintThreadSafe))
-	TObjectPtr<UL2MoverComponent> L2MoverComponent;
-
 	UPROPERTY(BlueprintReadOnly, meta=(BlueprintThreadSafe))
 	TObjectPtr<ACharacter> OwnerCharacter;
 
@@ -288,7 +295,7 @@ public:
 	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
 	UL2MovementDefinition* GetCurrentMovementDefinition() const;
 
-	FL2Mover_AnimData_Movement* GetCurrentMovementSet() const;
+	FL2Mover_MovementSet* GetCurrentMovementSet() const;
 
 	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
 	FL2Mover_AnimData_Idle GetMovementFragment_Idle() const;

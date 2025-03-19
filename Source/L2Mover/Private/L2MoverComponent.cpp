@@ -274,7 +274,7 @@ void UL2MoverComponent::RefreshGaitSpeedToMovement() const
 	if (CharacterMovement && IsValid(GetCurrentMovementDefinition()))
 	{
 		const FL2MoverGaitSpeedSettings GaitSpeedSettings
-			= GetCurrentMovementDefinition()->BaseSettings.GetGaitSpeedSettings(Gait);
+			= GetCurrentMovementDefinition()->ControlSettings.FindGaitSpeedSettings(Gait);
 		CharacterMovement->MaxWalkSpeed = GaitSpeedSettings.MaxSpeed;
 		CharacterMovement->MaxAcceleration = GaitSpeedSettings.MaxAcceleration;
 		CharacterMovement->BrakingDecelerationWalking = GaitSpeedSettings.BreakingDecelerationWalking;

@@ -50,7 +50,7 @@ class L2MOVER_API UL2MoverComponent : public UPawnComponent
 {
 	GENERATED_BODY()
 
-	friend class UL2MoverAnimInstance;
+	friend class UL2MoverAnimLayer_Locomotion;
 
 protected:
 	UPROPERTY(BlueprintAssignable, Category = "L2Mover")
