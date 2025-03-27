@@ -13,7 +13,6 @@
 #include "SequenceEvaluatorLibrary.h"
 #include "SequencePlayerLibrary.h"
 #include "Animation/AnimSubsystem_Tag.h"
-#include "Animation/L2MoverAnimInstanceProxy.h"
 #include "Data/L2MovementDefinition.h"
 #include "Data/L2MoverAnimData.h"
 #include "Data/L2MoverMovementEnums.h"
@@ -148,9 +147,7 @@ void UL2MoverAnimLayer_Locomotion::Initialization()
 			L2MoverComponent->OnUpdateRotationMode.AddUniqueDynamic(this, &ThisClass::OnUpdateRotationMode);
 			L2MoverComponent->OnUpdateGait.AddUniqueDynamic(this, &ThisClass::OnUpdateGait);
 			L2MoverComponent->OnUpdateAccelerationChanged.AddUniqueDynamic(this, &ThisClass::OnAccelerationChanged);
-			L2MoverComponent->OnUpdateRootYawOffsetStatus.AddUniqueDynamic(
-				this, &ThisClass::OnUpdateRootYawOffsetStatus);
-
+			L2MoverComponent->OnUpdateRootYawOffsetStatus.AddUniqueDynamic(this, &ThisClass::OnUpdateRootYawOffsetStatus);
 			OwnerCharacter->MovementModeChangedDelegate.AddUniqueDynamic(this, &ThisClass::OnMovementModeChanged);
 
 			OnAccelerationChanged(bHasAcceleration, LocalVelocityDirectionAngleWithOffset);
