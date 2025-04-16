@@ -6,8 +6,7 @@
 #include "L2MoverMovementStructs.h"
 #include "Animation/AimOffsetBlendSpace.h"
 #include "Animation/AnimSequence.h"
-#include "Data/L2MoverMovementEnums.h"
-#include "StructUtils/InstancedStruct.h"
+#include "Types/L2MoverMovementEnums.h"
 #include "L2MoverAnimData.generated.h"
 
 

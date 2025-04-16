@@ -8,7 +8,7 @@
 #include "L2MoverAnimLayer.h"
 #include "L2MoverGameplayTags.h"
 #include "Animation/AnimInstance.h"
-#include "Data/L2MoverMovementEnums.h"
+#include "L2Mover/Public/Types/L2MoverMovementEnums.h"
 #include "L2MoverAnimLayer_Locomotion.generated.h"
 
 
@@ -30,7 +30,7 @@ struct FL2Mover_AnimData_Pivot;
 struct FL2Mover_AnimData_TurnInPlace;
 struct FL2Mover_AnimData_Jump;
 struct FL2Mover_AnimData_AimOffset;
-struct FL2Mover_MovementSet;
+struct FL2MoverMovementAnimSettings;
 
 
 namespace L2Mover_AnimCurveName
@@ -167,7 +167,6 @@ public:
 	void UpdateRootYawOffset(float DeltaTime);
 	// -- End Helper Functions
 
-
 	// --  Begin State Node Functions
 	UFUNCTION(BlueprintCallable, meta = (AnimBlueprintFunction, BlueprintThreadSafe), Category = "State Node Functions")
 	void OnUpdate_UpdateIdleState(const FAnimUpdateContext& Context, const FAnimNodeReference& Node);
@@ -296,7 +295,7 @@ public:
 	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
 	UL2MovementDefinition* GetCurrentMovementDefinition() const;
 
-	FL2Mover_MovementSet* GetCurrentMovementSet() const;
+	FL2MoverMovementAnimSettings* GetCurrentMovementAnimSettings() const;
 
 	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
 	FL2Mover_AnimData_Idle GetMovementFragment_Idle() const;

@@ -34,7 +34,7 @@ struct FL2MoverGaitSpeedSettings
 
 	// 旋转速度
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Gait Settings")
-	FRotator RotationRate{0.f, 400.f, 0.f};
+	FRotator RotationRate{0.f, 0.f, 0.f};
 };
 
 

@@ -4,22 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "L2MoverAnimData.h"
-#include "Engine/DataAsset.h"
-#include "Settings/L2MoverMovementControlSettings.h"
-#include "Settings/L2MoverGroundedSettings.h"
-#include "Settings/L2MoverInAirSettings.h"
-#include "L2MovementDefinition.generated.h"
+#include "StructUtils/InstancedStruct.h"
+#include "L2MoverMovementAnimSettings.generated.h"
 
 
 USTRUCT(BlueprintType)
-struct FL2Mover_MovementSet
+struct FL2MoverMovementAnimSettings
 {
 	GENERATED_BODY()
 
-	//Settings
-public:
-	//Anim Data
-public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
 	TInstancedStruct<FL2Mover_AnimData_Idle> Idle;
 
@@ -49,33 +42,4 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
 	TInstancedStruct<FL2Mover_AnimData_AimOffset> AimOffset;
-};
-
-
-UCLASS(Blueprintable)
-class L2MOVER_API UL2MovementDefinition : public UDataAsset
-{
-	GENERATED_BODY()
-
-public:
-	// 控制设置
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Settings")
-	FL2MoverMovementControlSettings ControlSettings;
-
-	// 地面设置
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Settings")
-	FL2MoverGroundedSettings GroundedSettings;
-
-	// 空中设置
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Settings")
-	FL2MoverInAirSettings InAirSettings;
-
-	// MovementSet
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Settings")
-	TMap<FGameplayTag, FL2Mover_MovementSet> MovementSets;
-
-public:
-	UL2MovementDefinition();
-
-	FL2Mover_MovementSet* FindMovementSet(const FGameplayTag& InMovementState);
 };

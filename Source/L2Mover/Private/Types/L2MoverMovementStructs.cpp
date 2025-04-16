@@ -1,7 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Data/L2MoverMovementStructs.h"
+#include "Types/L2MoverMovementStructs.h"
 
 bool FL2Mover_Animation_4Direction::IsAnimValid() const
 {

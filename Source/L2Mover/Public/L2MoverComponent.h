@@ -115,19 +115,19 @@ public:
 
 protected:
 	// Character
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "L2Mover")
+	UPROPERTY(BlueprintReadOnly, Category = "L2Mover")
 	TObjectPtr<ACharacter> OwnerCharacter;
 
 	// CharacterMovement
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "L2Mover")
+	UPROPERTY(BlueprintReadOnly, Category = "L2Mover")
 	TObjectPtr<UCharacterMovementComponent> CharacterMovement;
 
-	// 运动定义
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover", meta=(DisplayName = "Movement Definitions"))
+	// 运动集合
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover", meta=(DisplayName="Movement Definitions"))
 	TArray<TSoftObjectPtr<const UL2MovementDefinition>> MovementDefinitions;
 
 	// 当前激活的运动定义
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "L2Mover")
+	UPROPERTY(BlueprintReadOnly, Category = "L2Mover")
 	TObjectPtr<UL2MovementDefinition> ActivatedMovementDefinition;
 
 	// 运动状态

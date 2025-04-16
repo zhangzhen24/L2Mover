@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Data/L2MoverMovementEnums.h"
+#include "L2Mover/Public/Types/L2MoverMovementEnums.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "L2MoverUtility.generated.h"
 
@@ -25,7 +25,6 @@ public:
 	// 获取相反的基本方向
 	UFUNCTION(BlueprintPure, BlueprintCallable, meta = (BlueprintThreadSafe), Category = "L2Mover Utility")
 	static EL2MovementDirection GetOppositeCardinalDirection(const EL2MovementDirection CurrentDirection);
-
 
 	// 是否安全有效
 	UFUNCTION(BlueprintPure, BlueprintCallable, meta = (BlueprintThreadSafe), Category = "L2Mover Utility")

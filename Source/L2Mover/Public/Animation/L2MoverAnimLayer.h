@@ -10,7 +10,7 @@ class UL2MoverComponent;
 class UL2MoverMainAnimInstance;
 
 /**
- * 
+ * 动画层
  */
 UCLASS()
 class L2MOVER_API UL2MoverAnimLayer : public UAnimInstance

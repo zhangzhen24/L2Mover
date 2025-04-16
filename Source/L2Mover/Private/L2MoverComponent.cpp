@@ -2,12 +2,12 @@
 
 #include "L2MoverComponent.h"
 
+#include "L2MovementDefinition.h"
 #include "Components/CapsuleComponent.h"
-#include "Data/L2MovementDefinition.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "Settings/L2MoverInAirSettings.h"
+#include "Types/L2MoverInAirSettings.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(L2MoverComponent)
 

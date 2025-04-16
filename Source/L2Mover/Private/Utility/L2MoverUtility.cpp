@@ -1,10 +1,9 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Utility/L2MoverUtility.h"
-
-#include "Data/L2MoverMovementEnums.h"
+#include "Utils/L2MoverUtility.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Types/L2MoverMovementEnums.h"
 
 EL2MovementDirection UL2MoverUtility::SelectCardinalDirectionFromAngle(float LocalVelocityAngle, float DeadZone,
                                                                        EL2MovementDirection CurrentDirection,

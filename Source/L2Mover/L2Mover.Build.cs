@@ -8,6 +8,8 @@ public class L2Mover : ModuleRules
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
+		PublicIncludePaths.Add("L2Mover");
+
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
