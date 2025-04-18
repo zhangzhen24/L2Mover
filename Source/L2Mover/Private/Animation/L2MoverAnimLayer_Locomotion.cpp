@@ -17,7 +17,7 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "Types/L2MoverAnimData.h"
+#include "Types/L2MoverAnimationData.h"
 #include "Types/L2MoverMovementEnums.h"
 #include "Utils/L2MoverUtility.h"
 
@@ -136,38 +136,36 @@ void UL2MoverAnimLayer_Locomotion::Initialization()
 
 		if (!L2MoverComponent)
 		{
-			L2MOVER_LOG(Error, TEXT("%s: Can not found L2MoverComponent in %s."), ANSI_TO_TCHAR(__FUNCTION__),
-			            *OwnerCharacter->GetName());
+			LOG_L2MOVER_ARGS(Error, "Can not found L2MoverComponent in %s.", *OwnerCharacter->GetName());
 			return;
 		}
 
 		if (L2MoverComponent)
 		{
-			L2MoverComponent->OnUpdateMovementDefinition.AddUniqueDynamic(this, &ThisClass::OnUpdateMovementDefinition);
-			L2MoverComponent->OnUpdateRotationMode.AddUniqueDynamic(this, &ThisClass::OnUpdateRotationMode);
-			L2MoverComponent->OnUpdateGait.AddUniqueDynamic(this, &ThisClass::OnUpdateGait);
+			L2MoverComponent->OnUpdateMovementDefinition.AddUniqueDynamic(this, &ThisClass::OnMovementDefinitionChanged);
+			L2MoverComponent->OnUpdateRotationMode.AddUniqueDynamic(this, &ThisClass::OnRotationModeChanged);
+			L2MoverComponent->OnUpdateGait.AddUniqueDynamic(this, &ThisClass::OnGaitChanged);
 			L2MoverComponent->OnUpdateAccelerationChanged.AddUniqueDynamic(this, &ThisClass::OnAccelerationChanged);
 			L2MoverComponent->OnUpdateRootYawOffsetStatus.AddUniqueDynamic(
-				this, &ThisClass::OnUpdateRootYawOffsetStatus);
+				this, &ThisClass::OnRootYawOffsetStatusChanged);
 			OwnerCharacter->MovementModeChangedDelegate.AddUniqueDynamic(this, &ThisClass::OnMovementModeChanged);
-
 			OnAccelerationChanged(bHasAcceleration, LocalVelocityDirectionAngleWithOffset);
-			OnUpdateRotationMode(L2MoverComponent->RotationMode);
-			OnUpdateMovementDefinition(L2MoverComponent->GetCurrentMovementDefinition());
-			OnUpdateRootYawOffsetStatus(bEnableRootYawOffset);
+			OnRotationModeChanged(L2MoverComponent->RotationMode);
+			OnMovementDefinitionChanged(L2MoverComponent->GetCurrentMovementDefinition());
+			OnRootYawOffsetStatusChanged(bEnableRootYawOffset);
 		}
 	}
 }
 
-void UL2MoverAnimLayer_Locomotion::OnUpdateGait(const FGameplayTag& InGait)
+void UL2MoverAnimLayer_Locomotion::OnGaitChanged(const FGameplayTag& InGait)
 {
 }
 
-void UL2MoverAnimLayer_Locomotion::OnUpdateRotationMode(const FGameplayTag& InRotationMode)
+void UL2MoverAnimLayer_Locomotion::OnRotationModeChanged(const FGameplayTag& InRotationMode)
 {
 }
 
-void UL2MoverAnimLayer_Locomotion::OnUpdateMovementDefinition(UL2MovementDefinition* InMovementDefinition)
+void UL2MoverAnimLayer_Locomotion::OnMovementDefinitionChanged(UL2MovementDefinition* InMovementDefinition)
 {
 }
 
@@ -176,7 +174,7 @@ void UL2MoverAnimLayer_Locomotion::OnAccelerationChanged(const bool InHasAcceler
 {
 }
 
-void UL2MoverAnimLayer_Locomotion::OnUpdateRootYawOffsetStatus(const bool bInEnableRootYawOffset)
+void UL2MoverAnimLayer_Locomotion::OnRootYawOffsetStatusChanged(const bool bInEnableRootYawOffset)
 {
 }
 

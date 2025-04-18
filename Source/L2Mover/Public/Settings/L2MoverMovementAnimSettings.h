@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "L2MoverAnimData.h"
 #include "StructUtils/InstancedStruct.h"
+#include "Types/L2MoverAnimationData.h"
 #include "L2MoverMovementAnimSettings.generated.h"
 
 

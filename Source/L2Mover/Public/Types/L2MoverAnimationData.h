@@ -7,7 +7,7 @@
 #include "Animation/AimOffsetBlendSpace.h"
 #include "Animation/AnimSequence.h"
 #include "Types/L2MoverMovementEnums.h"
-#include "L2MoverAnimData.generated.h"
+#include "L2MoverAnimationData.generated.h"
 
 
 USTRUCT(BlueprintType)

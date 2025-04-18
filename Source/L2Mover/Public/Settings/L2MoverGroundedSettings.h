@@ -8,7 +8,6 @@
 
 class UBlendSpace1D;
 
-
 USTRUCT(BlueprintType)
 struct FL2MoverGroundedSettings
 {
@@ -19,7 +18,7 @@ struct FL2MoverGroundedSettings
 	TObjectPtr<UBlendSpace1D> SprintLeans{nullptr};
 
 	// 冲刺倾斜插值速度
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data", Meta = (ClampMin = 0))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data", Meta = (ClampMin = 0, BlueprintThreadSafe))
 	float SprintLeanInterpolationSpeed{4.0f};
 
 	// 进入Crouch

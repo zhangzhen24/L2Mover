@@ -1,7 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Types/L2MoverMovementControlSettings.h"
+#include "Settings/L2MoverMovementControlSettings.h"
 
 #include "L2MoverGameplayTags.h"
 

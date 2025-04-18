@@ -1,5 +1,4 @@
-﻿
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -66,23 +65,23 @@ protected:
 	void Initialization();
 
 	UFUNCTION()
-	void OnUpdateGait(const FGameplayTag& InGait);
+	void OnMovementModeChanged(ACharacter* InCharacter, EMovementMode InPrevMovementMode, uint8 InPreviousCustomMode);
+	
+	UFUNCTION()
+	void OnGaitChanged(const FGameplayTag& InGait);
 
 	UFUNCTION()
-	void OnUpdateRotationMode(const FGameplayTag& InRotationMode);
+	void OnRotationModeChanged(const FGameplayTag& InRotationMode);
 
 	UFUNCTION()
-	void OnUpdateMovementDefinition(UL2MovementDefinition* InMovementDefinition);
+	void OnMovementDefinitionChanged(UL2MovementDefinition* InMovementDefinition);
 
 	UFUNCTION()
 	void OnAccelerationChanged(const bool InHasAcceleration, const double InLastVelocityDirection);
 
 	UFUNCTION()
-	void OnUpdateRootYawOffsetStatus(const bool bInEnableRootYawOffset);
-
-	UFUNCTION()
-	void OnMovementModeChanged(ACharacter* InCharacter, EMovementMode InPrevMovementMode, uint8 InPreviousCustomMode);
-
+	void OnRootYawOffsetStatusChanged(const bool bInEnableRootYawOffset);
+	
 	UFUNCTION()
 	void ResetMovementStateChanged();
 

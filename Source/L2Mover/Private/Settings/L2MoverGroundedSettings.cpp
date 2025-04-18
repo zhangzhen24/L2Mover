@@ -1,5 +1,4 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "L2Mover/Public/Types/L2MoverGroundedSettings.h"
-
+#include "Settings/L2MoverGroundedSettings.h"

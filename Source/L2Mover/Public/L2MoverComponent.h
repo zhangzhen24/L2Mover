@@ -114,15 +114,7 @@ public:
 	void SetSprinting(bool bInIsSprinting);
 
 protected:
-	// Character
-	UPROPERTY(BlueprintReadOnly, Category = "L2Mover")
-	TObjectPtr<ACharacter> OwnerCharacter;
-
-	// CharacterMovement
-	UPROPERTY(BlueprintReadOnly, Category = "L2Mover")
-	TObjectPtr<UCharacterMovementComponent> CharacterMovement;
-
-	// 运动集合
+	// 运动集
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover", meta=(DisplayName="Movement Definitions"))
 	TArray<TSoftObjectPtr<const UL2MovementDefinition>> MovementDefinitions;
 
@@ -153,6 +145,14 @@ protected:
 	// 扩展姿势
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover")
 	FGameplayTag ExtendedPose{FGameplayTag::EmptyTag};
+
+	// Character
+	UPROPERTY(BlueprintReadOnly, Category = "L2Mover")
+	TObjectPtr<ACharacter> OwnerCharacter;
+
+	// CharacterMovement
+	UPROPERTY(BlueprintReadOnly, Category = "L2Mover")
+	TObjectPtr<UCharacterMovementComponent> CharacterMovement;
 
 	// 速度
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "L2Mover")

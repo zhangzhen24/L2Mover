@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Types/L2MoverGroundedSettings.h"
-#include "Types/L2MoverInAirSettings.h"
-#include "Types/L2MoverMovementAnimSettings.h"
-#include "Types/L2MoverMovementControlSettings.h"
 #include "Engine/DataAsset.h"
+#include "Settings/L2MoverGroundedSettings.h"
+#include "Settings/L2MoverInAirSettings.h"
+#include "Settings/L2MoverMovementAnimSettings.h"
+#include "Settings/L2MoverMovementControlSettings.h"
 #include "L2MovementDefinition.generated.h"
 
 
