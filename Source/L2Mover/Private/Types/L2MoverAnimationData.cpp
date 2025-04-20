@@ -15,12 +15,12 @@ bool FL2Mover_AnimData_Idle::IsAnimValid() const
 	return IsValid(Idle);
 }
 
-bool FL2Mover_AnimData_Start_VelocityDirection::IsAnimValid() const
+bool FL2Mover_AnimData_Start::IsAnimValid() const
 {
 	return Animations.IsAnimValid();
 }
 
-UAnimSequence* FL2Mover_AnimData_Start_VelocityDirection::GetSequenceByDirection(EL2MovementDirection Direction) const
+UAnimSequence* FL2Mover_AnimData_Start::GetSequenceByDirection(EL2MovementDirection Direction) const
 {
 	UAnimSequence* OutSequence = nullptr;
 	switch (Direction)
@@ -41,13 +41,12 @@ UAnimSequence* FL2Mover_AnimData_Start_VelocityDirection::GetSequenceByDirection
 	return OutSequence;
 }
 
-bool FL2Mover_AnimData_Start_LookingDirection::IsAnimValid() const
+bool FL2Mover_AnimData_StartForwardFacing::IsAnimValid() const
 {
 	return Animations.IsAnimValid();
 }
 
-UAnimSequence* FL2Mover_AnimData_Start_LookingDirection::GetSequenceByDirection(
-	EL2MovementDirection Direction, float VelocityDirectionAngleWithOffset) const
+UAnimSequence* FL2Mover_AnimData_StartForwardFacing::GetSequenceByDirection(EL2MovementDirection Direction, float VelocityDirectionAngleWithOffset) const
 {
 	UAnimSequence* OutSequence = nullptr;
 	switch (Direction)

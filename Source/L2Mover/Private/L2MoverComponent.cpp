@@ -3,10 +3,12 @@
 #include "L2MoverComponent.h"
 
 #include "L2MovementDefinition.h"
+#include "LogL2Mover.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Settings/L2MoverInAirSettings.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(L2MoverComponent)
@@ -69,7 +71,12 @@ void UL2MoverComponent::InitializeMovement()
 
 	OwnerCharacter->LandedDelegate.AddUniqueDynamic(this, &ThisClass::OnLanded);
 
-	OnUpdateGait.AddDynamic(this, &ThisClass::OnGaitChanged);
+	OnGaltChangedDalegate.AddDynamic(this, &ThisClass::OnGaitChanged);
+
+	OnMovementDefinitionChangedDalegate.AddDynamic(this, &ThisClass::OnMovementDefinitionChanged);
+
+	// 设置MovementDefinition
+	SetCurrentMovementDefinition(MovementDefinitionTag);
 
 	// 设置步态
 	SetGait(DesiredGait);
@@ -91,6 +98,11 @@ void UL2MoverComponent::OnLanded(const FHitResult& Hit)
 void UL2MoverComponent::OnGaitChanged(const FGameplayTag& InGait)
 {
 	RefreshGaitSpeedToMovement();
+}
+
+void UL2MoverComponent::OnMovementDefinitionChanged(UL2MovementDefinition* InMovementDefinition)
+{
+	RefreshJumpingSettings();
 }
 
 void UL2MoverComponent::RefreshLocomotionData(float DeltaTime)
@@ -117,7 +129,7 @@ void UL2MoverComponent::RefreshGait(float DeltaTime)
 	if (DesiredGait != Gait)
 	{
 		Gait = DesiredGait;
-		OnUpdateGait.Broadcast(Gait);
+		OnGaltChangedDalegate.Broadcast(Gait);
 	}
 }
 
@@ -127,7 +139,7 @@ void UL2MoverComponent::RefreshRotationMode(float DeltaTime)
 	{
 		RotationMode = DesiredRotationMode;
 		RotationMode = IsAiming() ? L2MoverRotationMode::LookingDirection : DesiredRotationMode;
-		OnUpdateRotationMode.Broadcast(RotationMode);
+		OnRotationModeChangedDalegate.Broadcast(RotationMode);
 
 		RefreshOrientRotationToMovement();
 	}
@@ -135,7 +147,7 @@ void UL2MoverComponent::RefreshRotationMode(float DeltaTime)
 
 inline UL2MovementDefinition* UL2MoverComponent::GetCurrentMovementDefinition() const
 {
-	return ActivatedMovementDefinition;
+	return CurrentMovementDefinition;
 }
 
 inline bool UL2MoverComponent::IsShouldMove() const
@@ -168,9 +180,9 @@ inline bool UL2MoverComponent::IsAiming() const
 	return ExtendedPose == L2MoverExtendedPose::Aiming;
 }
 
-FGameplayTag UL2MoverComponent::GetMovementState() const
+FGameplayTag UL2MoverComponent::GetMovementDefinitionTag() const
 {
-	return MovementState;
+	return MovementDefinitionTag;
 }
 
 const FCharacterGroundInfo& UL2MoverComponent::GetGroundInfo()
@@ -234,6 +246,42 @@ const FCharacterGroundInfo& UL2MoverComponent::GetGroundInfo()
 	return GroundInfo;
 }
 
+void UL2MoverComponent::SetCurrentMovementDefinition(const FGameplayTag InMovementDefinitionTag)
+{
+	if (MovementDefinitions.Num() <= 0)
+	{
+		return;
+	}
+
+	if (!InMovementDefinitionTag.IsValid())
+	{
+		return;
+	}
+
+	for (const auto& MovementDefinitionPtr : MovementDefinitions)
+	{
+		if (MovementDefinitionPtr.IsValid())
+		{
+			const UL2MovementDefinition* MovementDefinition = MovementDefinitionPtr.Get();
+			if (MovementDefinition && MovementDefinition->MovementDefinitionTag == InMovementDefinitionTag)
+			{
+				RefreshMovementDefinition(const_cast<UL2MovementDefinition*>(MovementDefinition));
+				return;
+			}
+		}
+		else if (!MovementDefinitionPtr.IsNull())
+		{
+			// 仅在必要时进行同步加载
+			const UL2MovementDefinition* MovementDefinition = MovementDefinitionPtr.LoadSynchronous();
+			if (MovementDefinition && MovementDefinition->MovementDefinitionTag == InMovementDefinitionTag)
+			{
+				RefreshMovementDefinition(const_cast<UL2MovementDefinition*>(MovementDefinition));
+				return;
+			}
+		}
+	}
+}
+
 inline FGameplayTag UL2MoverComponent::GetGait() const
 {
 	return Gait;
@@ -266,6 +314,11 @@ void UL2MoverComponent::RefreshOrientRotationToMovement() const
 		CharacterMovement->bUseControllerDesiredRotation = true;
 		CharacterMovement->bOrientRotationToMovement = (RotationMode == L2MoverRotationMode::VelocityDirection);
 		OwnerCharacter->bUseControllerRotationYaw = false;
+		const FString DebugString = FString::Printf(TEXT("bOrientRotationToMovement: %s. bUseControllerDesiredRotation: %s. bUseControllerRotationYaw: %s"),
+		                                            CharacterMovement->bOrientRotationToMovement ? TEXT("true") : TEXT("false"),
+		                                            CharacterMovement->bUseControllerDesiredRotation ? TEXT("true") : TEXT("false"),
+		                                            OwnerCharacter->bUseControllerRotationYaw ? TEXT("true") : TEXT("false"));
+		UKismetSystemLibrary::PrintString(this, DebugString, true, false, FLinearColor::White, 10.f);
 	}
 }
 
@@ -297,11 +350,11 @@ void UL2MoverComponent::RefreshJumpingSettings() const
 	}
 }
 
-void UL2MoverComponent::SetCurrentMovementDefinition(UL2MovementDefinition* InMovementDefinition)
+void UL2MoverComponent::RefreshMovementDefinition(UL2MovementDefinition* InMovementDefinition)
 {
-	if (InMovementDefinition != ActivatedMovementDefinition)
+	if (InMovementDefinition != CurrentMovementDefinition)
 	{
-		ActivatedMovementDefinition = InMovementDefinition;
-		OnUpdateMovementDefinition.Broadcast(ActivatedMovementDefinition);
+		CurrentMovementDefinition = InMovementDefinition;
+		OnMovementDefinitionChangedDalegate.Broadcast(CurrentMovementDefinition);
 	}
 }

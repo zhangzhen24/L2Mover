@@ -5,11 +5,11 @@
 #include "CoreMinimal.h"
 #include "StructUtils/InstancedStruct.h"
 #include "Types/L2MoverAnimationData.h"
-#include "L2MoverMovementAnimSettings.generated.h"
+#include "L2MoverAnimaDataSettings.generated.h"
 
-
+//动画数据设置
 USTRUCT(BlueprintType)
-struct FL2MoverMovementAnimSettings
+struct FL2MoverAnimaDataSettings
 {
 	GENERATED_BODY()
 
@@ -17,10 +17,10 @@ struct FL2MoverMovementAnimSettings
 	TInstancedStruct<FL2Mover_AnimData_Idle> Idle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
-	TInstancedStruct<FL2Mover_AnimData_Start_VelocityDirection> Start;
+	TInstancedStruct<FL2Mover_AnimData_Start> Start;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
-	TInstancedStruct<FL2Mover_AnimData_Start_LookingDirection> StartForwardFacing;
+	TInstancedStruct<FL2Mover_AnimData_StartForwardFacing> StartForwardFacing;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
 	TInstancedStruct<FL2Mover_AnimData_Cycle> Cycle;

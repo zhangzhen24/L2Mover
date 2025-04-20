@@ -4,9 +4,24 @@
 
 #include "NativeGameplayTags.h"
 
-namespace L2MoverLocomotionMode
+namespace L2MoverAnimLayer
 {
-	L2MOVER_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(None);
+	L2MOVER_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Locomotion);
+	L2MOVER_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Overlay);
+	L2MOVER_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Extended);
+	L2MOVER_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(View);
+	L2MOVER_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(RagDoll);
+	//...
+}
+
+namespace L2MoverStance
+{
+	L2MOVER_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Standing);
+	L2MOVER_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Crouching);
+}
+
+namespace L2MoverMovementMode
+{
 	L2MOVER_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Grounded);
 	L2MOVER_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InAir);
 	L2MOVER_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Flying);
@@ -28,6 +43,7 @@ namespace L2MoverGait
 
 namespace L2MoverLocomotionAction
 {
+	//
 }
 
 namespace L2MoverExtendedPose
@@ -35,4 +51,9 @@ namespace L2MoverExtendedPose
 	L2MOVER_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Normal);
 	L2MOVER_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Aiming);
 	L2MOVER_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Custom);
+}
+
+namespace L2MoverMovementDefinitionTag
+{
+	L2MOVER_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Unarmed); //徒手、手无寸铁
 }

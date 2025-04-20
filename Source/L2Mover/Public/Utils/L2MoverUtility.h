@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "L2Mover/Public/Types/L2MoverMovementEnums.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "Types/L2MoverMovementEnums.h"
 #include "L2MoverUtility.generated.h"
 
 /**

@@ -6,7 +6,7 @@
 #include "Engine/DataAsset.h"
 #include "Settings/L2MoverGroundedSettings.h"
 #include "Settings/L2MoverInAirSettings.h"
-#include "Settings/L2MoverMovementAnimSettings.h"
+#include "Settings/L2MoverAnimaDataSettings.h"
 #include "Settings/L2MoverMovementControlSettings.h"
 #include "L2MovementDefinition.generated.h"
 
@@ -17,6 +17,10 @@ class L2MOVER_API UL2MovementDefinition : public UDataAsset
 	GENERATED_BODY()
 
 public:
+	// MovementDefinitionTag
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Settings")
+	FGameplayTag MovementDefinitionTag{FGameplayTag::EmptyTag};
+
 	// 控制设置
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Settings")
 	FL2MoverMovementControlSettings ControlSettings;
@@ -29,12 +33,11 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Settings")
 	FL2MoverInAirSettings InAirSettings;
 
-	// MovementSet
+	// MovementSet //[Gait,AnimDataSettings]
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Settings")
-	TMap<FGameplayTag, FL2MoverMovementAnimSettings> MovementSets;
-
+	TMap<FGameplayTag, FL2MoverAnimaDataSettings> MovementSets;
 
 	UL2MovementDefinition();
-	
-	FL2MoverMovementAnimSettings* FindMovementSet(const FGameplayTag& InMovementState);
+
+	FL2MoverAnimaDataSettings* FindMovementDefinitionByGait(const FGameplayTag& InGait);
 };

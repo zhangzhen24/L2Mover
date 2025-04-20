@@ -7,7 +7,8 @@
 #include "L2MoverAnimLayer.h"
 #include "L2MoverGameplayTags.h"
 #include "Animation/AnimInstance.h"
-#include "L2Mover/Public/Types/L2MoverMovementEnums.h"
+#include "Types/L2MoverAnimationData.h"
+#include "Types/L2MoverMovementEnums.h"
 #include "L2MoverAnimLayer_Locomotion.generated.h"
 
 
@@ -18,18 +19,6 @@ class UL2MovementDefinition;
 
 struct FAnimUpdateContext;
 struct FAnimNodeReference;
-struct FL2Mover_AnimData;
-struct FL2Mover_AnimData_Idle;
-struct FL2Mover_AnimData_Start_VelocityDirection;
-struct FL2Mover_AnimData_Start_LookingDirection;
-struct FL2Mover_AnimData_Cycle;
-struct FL2Mover_AnimData_Stop;
-struct FL2Mover_AnimData_Sprint;
-struct FL2Mover_AnimData_Pivot;
-struct FL2Mover_AnimData_TurnInPlace;
-struct FL2Mover_AnimData_Jump;
-struct FL2Mover_AnimData_AimOffset;
-struct FL2MoverMovementAnimSettings;
 
 
 namespace L2Mover_AnimCurveName
@@ -66,7 +55,7 @@ protected:
 
 	UFUNCTION()
 	void OnMovementModeChanged(ACharacter* InCharacter, EMovementMode InPrevMovementMode, uint8 InPreviousCustomMode);
-	
+
 	UFUNCTION()
 	void OnGaitChanged(const FGameplayTag& InGait);
 
@@ -78,24 +67,6 @@ protected:
 
 	UFUNCTION()
 	void OnAccelerationChanged(const bool InHasAcceleration, const double InLastVelocityDirection);
-
-	UFUNCTION()
-	void OnRootYawOffsetStatusChanged(const bool bInEnableRootYawOffset);
-	
-	UFUNCTION()
-	void ResetMovementStateChanged();
-
-	UFUNCTION()
-	void ResetCrouchStateChanged() { bCrouchStateChange = false; }
-
-	UFUNCTION()
-	void ResetRotationModeChanged() { bRotationModeChanged = false; }
-
-	UFUNCTION()
-	void ResetMovementModeChanged() { bMovementModeChanged = false; }
-
-	UFUNCTION()
-	void ResetLinkedLayerChanged() { bLinkedLayerChanged = false; }
 
 protected:
 	void UpdateLocationData(float DeltaTime);
@@ -144,9 +115,6 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe))
 	bool bMovementModeChanged = false;
 
-	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe))
-	FGameplayTag MovementSetName = FGameplayTag::EmptyTag;
-
 	// --------------------------------------------- Functions --------------------------------------------- //
 public:
 	//当前角色速度方向是否与回转运动方向垂直
@@ -185,15 +153,14 @@ public:
 	UFUNCTION(BlueprintCallable, meta = (AnimBlueprintFunction, BlueprintThreadSafe), Category = "State Node Functions")
 	void OnUpdate_UpdatePivotState(const FAnimUpdateContext& Context, const FAnimNodeReference& Node);
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, meta = (AnimBlueprintFunction, BlueprintThreadSafe),
-		Category = "State Node Functions")
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, meta = (AnimBlueprintFunction, BlueprintThreadSafe), Category = "State Node Functions")
 	void OnUpdate_UpdateLocomotionStateMachine(const FAnimUpdateContext& Context, const FAnimNodeReference& Node);
 
 	UFUNCTION(BlueprintCallable, meta = (AnimBlueprintFunction, BlueprintThreadSafe), Category = "State Node Functions")
-	void OnBecomeRelevant_SetUpIdleState_IdleSM(const FAnimUpdateContext& Context, const FAnimNodeReference& Node);
+	void OnBecomeRelevant_SetUpIdleState_InitIdleBreak(const FAnimUpdateContext& Context, const FAnimNodeReference& Node);
 
 	UFUNCTION(BlueprintCallable, meta = (AnimBlueprintFunction, BlueprintThreadSafe), Category = "State Node Functions")
-	void OnUpdate_UpdateIdleState_IdleSM(const FAnimUpdateContext& Context, const FAnimNodeReference& Node);
+	void OnUpdate_UpdateIdleState_ProcessIdleBreak(const FAnimUpdateContext& Context, const FAnimNodeReference& Node);
 
 	UFUNCTION(BlueprintCallable, meta = (AnimBlueprintFunction, BlueprintThreadSafe), Category = "State Node Functions")
 	void OnBecomeRelevant_LandRecoveryState(const FAnimUpdateContext& Context, const FAnimNodeReference& Node);
@@ -294,38 +261,6 @@ public:
 	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
 	UL2MovementDefinition* GetCurrentMovementDefinition() const;
 
-	FL2MoverMovementAnimSettings* GetCurrentMovementAnimSettings() const;
-
-	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
-	FL2Mover_AnimData_Idle GetMovementFragment_Idle() const;
-
-	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
-	FL2Mover_AnimData_Start_VelocityDirection GetMovementFragment_Start() const;
-
-	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
-	FL2Mover_AnimData_Start_LookingDirection GetMovementFragment_StartForwardFacing() const;
-
-	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
-	FL2Mover_AnimData_Cycle GetMovementFragment_Cycle() const;
-
-	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
-	FL2Mover_AnimData_Stop GetMovementFragment_Stop() const;
-
-	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
-	FL2Mover_AnimData_Sprint GetMovementFragment_Sprint() const;
-
-	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
-	FL2Mover_AnimData_Pivot GetMovementFragment_Pivot() const;
-
-	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
-	FL2Mover_AnimData_TurnInPlace GetMovementFragment_TurnInPlace() const;
-
-	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
-	FL2Mover_AnimData_Jump GetMovementFragment_Jump() const;
-
-	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
-	FL2Mover_AnimData_AimOffset GetMovementFragment_AimOffset() const;
-
 	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe), Category = "Animation Data")
 	TArray<UAnimSequence*> GetIdleBreaks() const;
 
@@ -351,6 +286,38 @@ public:
 
 
 	// --------------------------------------------- Property --------------------------------------------- //
+	//Animation
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
+	FL2Mover_AnimData_Idle IdleData;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
+	FL2Mover_AnimData_Start StartData;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
+	FL2Mover_AnimData_StartForwardFacing StartForwardFacingData;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
+	FL2Mover_AnimData_Cycle CycleData;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
+	FL2Mover_AnimData_Stop StopData;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
+	FL2Mover_AnimData_Sprint SprintData;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
+	FL2Mover_AnimData_TurnInPlace TurnInPlaceData;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
+	FL2Mover_AnimData_Pivot PivotData;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
+	FL2Mover_AnimData_Jump JumpData;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
+	FL2Mover_AnimData_AimOffset AimOffsetData;
+
 	//Default
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (BlueprintThreadSafe), Category = "Default")
@@ -572,14 +539,20 @@ public:
 	bool bIsAnimValid_Pivot = false;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Check Anim Valid")
-	bool bIsAnimValid_JumpApex = false;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Check Anim Valid")
-	bool bIsAnimValid_JumpFallLand = false;
+	bool bIsAnimValid_JumpStart = false;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Check Anim Valid")
 	bool bIsAnimValid_JumpStartLoop = false;
 
+	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Check Anim Valid")
+	bool bIsAnimValid_JumpApex = false;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Check Anim Valid")
+	bool bIsAnimValid_JumpFallLoop = false;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Check Anim Valid")
+	bool bIsAnimValid_JumpFallLand = false;
+	
 	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe), Category = "Check Anim Valid")
 	bool bIsAnimValid_AimOffset = false;
 

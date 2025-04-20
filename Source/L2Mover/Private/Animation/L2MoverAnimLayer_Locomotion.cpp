@@ -91,9 +91,9 @@ void UL2MoverAnimLayer_Locomotion::NativeThreadSafeUpdateAnimation(float DeltaSe
 
 
 	//Character State
-	MovementSetName = L2MoverComponent->GetMovementState();
 	Gait = L2MoverComponent->GetGait();
 	RotationMode = L2MoverComponent->GetRotationMode();
+	bEnableRootYawOffset = RotationMode == L2MoverRotationMode::LookingDirection;
 
 	UpdateLocationData(DeltaSeconds);
 	UpdateRotationData(DeltaSeconds);
@@ -129,10 +129,7 @@ void UL2MoverAnimLayer_Locomotion::Initialization()
 	{
 		OwnerMesh = OwnerCharacter->GetMesh();
 		OwnerCharacterMovement = OwnerCharacter->GetCharacterMovement();
-		if (!L2MoverComponent)
-		{
-			L2MoverComponent = OwnerCharacter->FindComponentByClass<UL2MoverComponent>();
-		}
+		L2MoverComponent = OwnerCharacter->FindComponentByClass<UL2MoverComponent>();
 
 		if (!L2MoverComponent)
 		{
@@ -140,20 +137,14 @@ void UL2MoverAnimLayer_Locomotion::Initialization()
 			return;
 		}
 
-		if (L2MoverComponent)
-		{
-			L2MoverComponent->OnUpdateMovementDefinition.AddUniqueDynamic(this, &ThisClass::OnMovementDefinitionChanged);
-			L2MoverComponent->OnUpdateRotationMode.AddUniqueDynamic(this, &ThisClass::OnRotationModeChanged);
-			L2MoverComponent->OnUpdateGait.AddUniqueDynamic(this, &ThisClass::OnGaitChanged);
-			L2MoverComponent->OnUpdateAccelerationChanged.AddUniqueDynamic(this, &ThisClass::OnAccelerationChanged);
-			L2MoverComponent->OnUpdateRootYawOffsetStatus.AddUniqueDynamic(
-				this, &ThisClass::OnRootYawOffsetStatusChanged);
-			OwnerCharacter->MovementModeChangedDelegate.AddUniqueDynamic(this, &ThisClass::OnMovementModeChanged);
-			OnAccelerationChanged(bHasAcceleration, LocalVelocityDirectionAngleWithOffset);
-			OnRotationModeChanged(L2MoverComponent->RotationMode);
-			OnMovementDefinitionChanged(L2MoverComponent->GetCurrentMovementDefinition());
-			OnRootYawOffsetStatusChanged(bEnableRootYawOffset);
-		}
+		L2MoverComponent->OnMovementDefinitionChangedDalegate.AddUniqueDynamic(this, &ThisClass::OnMovementDefinitionChanged);
+		L2MoverComponent->OnRotationModeChangedDalegate.AddUniqueDynamic(this, &ThisClass::OnRotationModeChanged);
+		L2MoverComponent->OnGaltChangedDalegate.AddUniqueDynamic(this, &ThisClass::OnGaitChanged);
+		L2MoverComponent->OnAccelerationChangedDelegate.AddUniqueDynamic(this, &ThisClass::OnAccelerationChanged);
+		OwnerCharacter->MovementModeChangedDelegate.AddUniqueDynamic(this, &ThisClass::OnMovementModeChanged);
+		OnAccelerationChanged(bHasAcceleration, LocalVelocityDirectionAngleWithOffset);
+		OnRotationModeChanged(L2MoverComponent->RotationMode);
+		OnMovementDefinitionChanged(L2MoverComponent->GetCurrentMovementDefinition());
 	}
 }
 
@@ -167,6 +158,59 @@ void UL2MoverAnimLayer_Locomotion::OnRotationModeChanged(const FGameplayTag& InR
 
 void UL2MoverAnimLayer_Locomotion::OnMovementDefinitionChanged(UL2MovementDefinition* InMovementDefinition)
 {
+	if (!IsValid(InMovementDefinition))
+	{
+		return;
+	}
+
+	if (!IsValid(L2MoverComponent))
+	{
+		return;
+	}
+
+	if (const FL2MoverAnimaDataSettings* MovementAnimSettings = InMovementDefinition->FindMovementDefinitionByGait(Gait))
+	{
+		if (MovementAnimSettings->Idle.IsValid())
+		{
+			IdleData = MovementAnimSettings->Idle.Get<FL2Mover_AnimData_Idle>();
+		}
+		if (MovementAnimSettings->Start.IsValid())
+		{
+			StartData = MovementAnimSettings->Start.Get<FL2Mover_AnimData_Start>();
+		}
+		if (MovementAnimSettings->StartForwardFacing.IsValid())
+		{
+			StartForwardFacingData = MovementAnimSettings->StartForwardFacing.Get<FL2Mover_AnimData_StartForwardFacing>();
+		}
+		if (MovementAnimSettings->Cycle.IsValid())
+		{
+			CycleData = MovementAnimSettings->Cycle.Get<FL2Mover_AnimData_Cycle>();
+		}
+		if (MovementAnimSettings->Stop.IsValid())
+		{
+			StopData = MovementAnimSettings->Stop.Get<FL2Mover_AnimData_Stop>();
+		}
+		if (MovementAnimSettings->Sprint.IsValid())
+		{
+			SprintData = MovementAnimSettings->Sprint.Get<FL2Mover_AnimData_Sprint>();
+		}
+		if (MovementAnimSettings->Pivot.IsValid())
+		{
+			PivotData = MovementAnimSettings->Pivot.Get<FL2Mover_AnimData_Pivot>();
+		}
+		if (MovementAnimSettings->TurnInPlace.IsValid())
+		{
+			TurnInPlaceData = MovementAnimSettings->TurnInPlace.Get<FL2Mover_AnimData_TurnInPlace>();
+		}
+		if (MovementAnimSettings->Jump.IsValid())
+		{
+			JumpData = MovementAnimSettings->Jump.Get<FL2Mover_AnimData_Jump>();
+		}
+		if (MovementAnimSettings->AimOffset.IsValid())
+		{
+			AimOffsetData = MovementAnimSettings->AimOffset.Get<FL2Mover_AnimData_AimOffset>();
+		}
+	}
 }
 
 void UL2MoverAnimLayer_Locomotion::OnAccelerationChanged(const bool InHasAcceleration,
@@ -174,16 +218,8 @@ void UL2MoverAnimLayer_Locomotion::OnAccelerationChanged(const bool InHasAcceler
 {
 }
 
-void UL2MoverAnimLayer_Locomotion::OnRootYawOffsetStatusChanged(const bool bInEnableRootYawOffset)
-{
-}
-
 void UL2MoverAnimLayer_Locomotion::OnMovementModeChanged(ACharacter* InCharacter, EMovementMode InPrevMovementMode,
                                                          uint8 InPreviousCustomMode)
-{
-}
-
-void UL2MoverAnimLayer_Locomotion::ResetMovementStateChanged()
 {
 }
 
@@ -338,30 +374,25 @@ void UL2MoverAnimLayer_Locomotion::UpdateUpperBodyAlpha(float DeltaTime)
 
 void UL2MoverAnimLayer_Locomotion::UpdateCheckAnimValid(float DeltaTime)
 {
-	const FL2Mover_AnimData_Idle& IdleData = GetMovementFragment_Idle();
 	bIsAnimValid_Idle = IdleData.IsAnimValid();
 
-	const FL2Mover_AnimData_Start_VelocityDirection& StartData = GetMovementFragment_Start();
 	bIsAnimValid_Start = StartData.IsAnimValid();
 
-	const FL2Mover_AnimData_Start_LookingDirection& StartData_4Way = GetMovementFragment_StartForwardFacing();
-	bIsAnimValid_StartForwardFacing = StartData_4Way.IsAnimValid();
+	bIsAnimValid_StartForwardFacing = StartForwardFacingData.IsAnimValid();
 
-	const FL2Mover_AnimData_Cycle& CycleData = GetMovementFragment_Cycle();
 	bIsAnimValid_Cycle = CycleData.IsAnimValid();
 
-	const FL2Mover_AnimData_Stop& StopData = GetMovementFragment_Stop();
 	bIsAnimValid_Stop = StopData.IsAnimValid();
 
-	const FL2Mover_AnimData_Pivot& PivotData = GetMovementFragment_Pivot();
 	bIsAnimValid_Pivot = PivotData.IsAnimValid();
 
-	const FL2Mover_AnimData_Jump& JumpData = GetMovementFragment_Jump();
-	bIsAnimValid_JumpApex = IsValid(JumpData.Jump_Apex);
-	bIsAnimValid_JumpFallLand = IsValid(JumpData.Jump_FallLand);
+	bIsAnimValid_JumpStart = IsValid(JumpData.Jump_Start);
 	bIsAnimValid_JumpStartLoop = IsValid(JumpData.Jump_StartLoop);
+	bIsAnimValid_JumpApex = IsValid(JumpData.Jump_Apex);
+	bIsAnimValid_JumpFallLoop = IsValid(JumpData.Jump_FallLoop);
+	bIsAnimValid_JumpFallLand = IsValid(JumpData.Jump_FallLand);
 
-	const FL2Mover_AnimData_AimOffset& AimOffsetData = GetMovementFragment_AimOffset();
+
 	bIsAnimValid_AimOffset = IsValid(AimOffsetData.AimOffset);
 }
 
@@ -587,8 +618,8 @@ void UL2MoverAnimLayer_Locomotion::OnUpdate_UpdatePivotState(const FAnimUpdateCo
 	}
 }
 
-void UL2MoverAnimLayer_Locomotion::OnBecomeRelevant_SetUpIdleState_IdleSM(const FAnimUpdateContext& Context,
-                                                                          const FAnimNodeReference& Node)
+void UL2MoverAnimLayer_Locomotion::OnBecomeRelevant_SetUpIdleState_InitIdleBreak(const FAnimUpdateContext& Context,
+                                                                                 const FAnimNodeReference& Node)
 {
 	//选择空闲动画的延迟时间
 	ChooseIdleBreakDelayTime();
@@ -598,8 +629,8 @@ void UL2MoverAnimLayer_Locomotion::OnBecomeRelevant_SetUpIdleState_IdleSM(const 
 }
 
 
-void UL2MoverAnimLayer_Locomotion::OnUpdate_UpdateIdleState_IdleSM(const FAnimUpdateContext& Context,
-                                                                   const FAnimNodeReference& Node)
+void UL2MoverAnimLayer_Locomotion::OnUpdate_UpdateIdleState_ProcessIdleBreak(const FAnimUpdateContext& Context,
+                                                                             const FAnimNodeReference& Node)
 {
 	bool Result = false;
 	FAnimationStateResultReference AnimationState;
@@ -647,7 +678,7 @@ void UL2MoverAnimLayer_Locomotion::OnUpdate_UpdateLocomotionStateMachine_Impleme
 	{
 		if (const FAnimSubsystem_Tag* TagSubsystem = AnimBlueprintClass->FindSubsystem<FAnimSubsystem_Tag>())
 		{
-			if (FAnimNode_Base* LinkedAnimGraphNode = TagSubsystem->FindNodeByTag<FAnimNode_Base>("Start", this))
+			if (FAnimNode_Base* LinkedAnimGraphNode = TagSubsystem->FindNodeByTag<FAnimNode_Base>("StartLayerNode", this))
 			{
 				//获取Tag Anim Node
 				FAnimNodeReference StartAnimNode(this, *LinkedAnimGraphNode);
@@ -679,7 +710,6 @@ void UL2MoverAnimLayer_Locomotion::OnUpdate_UpdateIdleAnim(const FAnimUpdateCont
 	USequencePlayerLibrary::ConvertToSequencePlayerPure(Node, SequencePlayer, bResult);
 	if (bResult)
 	{
-		const FL2Mover_AnimData_Idle& IdleData = GetMovementFragment_Idle();
 		if (IsValid(IdleData.Idle))
 		{
 			USequencePlayerLibrary::SetSequenceWithInertialBlending(Context, SequencePlayer, IdleData.Idle, 0.2f);
@@ -696,7 +726,6 @@ void UL2MoverAnimLayer_Locomotion::OnBecomeRelevant_SetUpIdleBreakAnim(const FAn
 	USequencePlayerLibrary::ConvertToSequencePlayerPure(Node, SequencePlayer, bResult);
 	if (bResult)
 	{
-		const FL2Mover_AnimData_Idle& IdleData = GetMovementFragment_Idle();
 		if (IdleData.Idle_Breaks.Num() > 0)
 		{
 			UAnimSequenceBase* TempAnim = IdleData.Idle_Breaks.IsValidIndex(CurrentIdleBreakIndex)
@@ -1029,7 +1058,6 @@ void UL2MoverAnimLayer_Locomotion::OnUpdate_UpdateTurnInPlaceRecoveryAnim(const 
 UAnimSequence* UL2MoverAnimLayer_Locomotion::SelectTurnInPlaceAnimation(float Direction)
 {
 	UAnimSequence* TempAnim = nullptr;
-	const FL2Mover_AnimData_TurnInPlace& TurnInPlaceData = GetMovementFragment_TurnInPlace();
 	if (TurnInPlaceData.IsAnimValid())
 	{
 		TempAnim = Direction > 0.f ? TurnInPlaceData.TurnInPlace_R_90 : TurnInPlaceData.TurnInPlace_L_90;
@@ -1040,7 +1068,6 @@ UAnimSequence* UL2MoverAnimLayer_Locomotion::SelectTurnInPlaceAnimation(float Di
 
 bool UL2MoverAnimLayer_Locomotion::CanPlayIdleBreak() const
 {
-	const FL2Mover_AnimData_Idle& IdleData = GetMovementFragment_Idle();
 	if (!IdleData.IsAnimValid())
 		return false;
 
@@ -1096,7 +1123,6 @@ bool UL2MoverAnimLayer_Locomotion::ShouldDistanceMatchStop() const
 
 UAnimSequenceBase* UL2MoverAnimLayer_Locomotion::GetDesiredPivotSequence(EL2MovementDirection InDirection) const
 {
-	const FL2Mover_AnimData_Pivot& PivotData = GetMovementFragment_Pivot();
 	return PivotData.GetSequenceByDirection(InDirection);
 }
 
@@ -1116,140 +1142,14 @@ UL2MovementDefinition* UL2MoverAnimLayer_Locomotion::GetCurrentMovementDefinitio
 	return MovementDefinition;
 }
 
-FL2MoverMovementAnimSettings* UL2MoverAnimLayer_Locomotion::GetCurrentMovementAnimSettings() const
-{
-	UL2MovementDefinition* MovementDefinition = GetCurrentMovementDefinition();
-	if (!IsValid(MovementDefinition))
-	{
-		return nullptr;
-	}
-
-	return MovementDefinition->FindMovementSet(MovementSetName);
-}
-
-FL2Mover_AnimData_Idle UL2MoverAnimLayer_Locomotion::GetMovementFragment_Idle() const
-{
-	const FL2MoverMovementAnimSettings* MovementSet = GetCurrentMovementAnimSettings();
-	if (!MovementSet || !MovementSet->Idle.IsValid())
-	{
-		FL2Mover_AnimData_Idle Idle;
-		return Idle;
-	}
-	return MovementSet->Idle.Get<FL2Mover_AnimData_Idle>();
-}
-
-FL2Mover_AnimData_Start_VelocityDirection UL2MoverAnimLayer_Locomotion::GetMovementFragment_Start() const
-{
-	const FL2MoverMovementAnimSettings* MovementSet = GetCurrentMovementAnimSettings();
-	if (!MovementSet || !MovementSet->Start.IsValid())
-	{
-		FL2Mover_AnimData_Start_VelocityDirection Start;
-		return Start;
-	}
-	return MovementSet->Start.Get<FL2Mover_AnimData_Start_VelocityDirection>();
-}
-
-FL2Mover_AnimData_Start_LookingDirection UL2MoverAnimLayer_Locomotion::GetMovementFragment_StartForwardFacing() const
-{
-	const FL2MoverMovementAnimSettings* MovementSet = GetCurrentMovementAnimSettings();
-	if (!MovementSet || !MovementSet->StartForwardFacing.IsValid())
-	{
-		FL2Mover_AnimData_Start_LookingDirection StartForwardFacing;
-		return StartForwardFacing;
-	}
-	return MovementSet->StartForwardFacing.Get<FL2Mover_AnimData_Start_LookingDirection>();
-}
-
-FL2Mover_AnimData_Cycle UL2MoverAnimLayer_Locomotion::GetMovementFragment_Cycle() const
-{
-	const FL2MoverMovementAnimSettings* MovementSet = GetCurrentMovementAnimSettings();
-	if (!MovementSet || !MovementSet->Cycle.IsValid())
-	{
-		FL2Mover_AnimData_Cycle Cycle;
-		return Cycle;
-	}
-	return MovementSet->Cycle.Get<FL2Mover_AnimData_Cycle>();
-}
-
-FL2Mover_AnimData_Stop UL2MoverAnimLayer_Locomotion::GetMovementFragment_Stop() const
-{
-	const FL2MoverMovementAnimSettings* MovementSet = GetCurrentMovementAnimSettings();
-	if (!MovementSet || !MovementSet->Stop.IsValid())
-	{
-		FL2Mover_AnimData_Stop Stop;
-		return Stop;
-	}
-	return MovementSet->Stop.Get<FL2Mover_AnimData_Stop>();
-}
-
-FL2Mover_AnimData_Sprint UL2MoverAnimLayer_Locomotion::GetMovementFragment_Sprint() const
-{
-	const FL2MoverMovementAnimSettings* MovementSet = GetCurrentMovementAnimSettings();
-	if (!MovementSet || !MovementSet->Sprint.IsValid())
-	{
-		FL2Mover_AnimData_Sprint Sprint;
-		return Sprint;
-	}
-	return MovementSet->Sprint.Get<FL2Mover_AnimData_Sprint>();
-}
-
-FL2Mover_AnimData_Pivot UL2MoverAnimLayer_Locomotion::GetMovementFragment_Pivot() const
-{
-	const FL2MoverMovementAnimSettings* MovementSet = GetCurrentMovementAnimSettings();
-	if (!MovementSet || !MovementSet->Pivot.IsValid())
-	{
-		FL2Mover_AnimData_Pivot Pivot;
-		return Pivot;
-	}
-	return MovementSet->Pivot.Get<FL2Mover_AnimData_Pivot>();
-}
-
-FL2Mover_AnimData_TurnInPlace UL2MoverAnimLayer_Locomotion::GetMovementFragment_TurnInPlace() const
-{
-	const FL2MoverMovementAnimSettings* MovementSet = GetCurrentMovementAnimSettings();
-	if (!MovementSet || !MovementSet->TurnInPlace.IsValid())
-	{
-		FL2Mover_AnimData_TurnInPlace TurnInPlace;
-		return TurnInPlace;
-	}
-	return MovementSet->TurnInPlace.Get<FL2Mover_AnimData_TurnInPlace>();
-}
-
-FL2Mover_AnimData_Jump UL2MoverAnimLayer_Locomotion::GetMovementFragment_Jump() const
-{
-	const FL2MoverMovementAnimSettings* MovementSet = GetCurrentMovementAnimSettings();
-	if (!MovementSet || !MovementSet->Jump.IsValid())
-	{
-		FL2Mover_AnimData_Jump Jump;
-		return Jump;
-	}
-	return MovementSet->Jump.Get<FL2Mover_AnimData_Jump>();
-}
-
-FL2Mover_AnimData_AimOffset UL2MoverAnimLayer_Locomotion::GetMovementFragment_AimOffset() const
-{
-	const FL2MoverMovementAnimSettings* MovementSet = GetCurrentMovementAnimSettings();
-	if (!MovementSet || !MovementSet->AimOffset.IsValid())
-	{
-		FL2Mover_AnimData_AimOffset AimOffset;
-		return AimOffset;
-	}
-	return MovementSet->AimOffset.Get<FL2Mover_AnimData_AimOffset>();
-}
-
 TArray<UAnimSequence*> UL2MoverAnimLayer_Locomotion::GetIdleBreaks() const
 {
-	const FL2Mover_AnimData_Idle& IdleData = GetMovementFragment_Idle();
 	return IdleData.Idle_Breaks;
 }
 
 UAnimSequenceBase* UL2MoverAnimLayer_Locomotion::GetStartAnim() const
 {
 	UAnimSequence* OutSequence = nullptr;
-	const FL2Mover_AnimData_Sprint& SprintData = GetMovementFragment_Sprint();
-	const FL2Mover_AnimData_Start_VelocityDirection& StartData = GetMovementFragment_Start();
-	const FL2Mover_AnimData_Start_LookingDirection& StartForwardFacingData = GetMovementFragment_StartForwardFacing();
-
 	if (RotationMode == L2MoverRotationMode::VelocityDirection)
 	{
 		if (bIsSprinting)
@@ -1282,9 +1182,6 @@ UAnimSequenceBase* UL2MoverAnimLayer_Locomotion::GetStartAnim() const
 UAnimSequenceBase* UL2MoverAnimLayer_Locomotion::GetCycleAnim() const
 {
 	UAnimSequence* OutSequence = nullptr;
-	const FL2Mover_AnimData_Sprint& SprintData = GetMovementFragment_Sprint();
-	const FL2Mover_AnimData_Cycle& CycleData = GetMovementFragment_Cycle();
-
 	if (bIsSprinting)
 	{
 		if (SprintData.IsAnimValid())
@@ -1306,8 +1203,6 @@ UAnimSequenceBase* UL2MoverAnimLayer_Locomotion::GetCycleAnim() const
 UAnimSequenceBase* UL2MoverAnimLayer_Locomotion::GetStopAnim() const
 {
 	UAnimSequence* OutSequence = nullptr;
-	const FL2Mover_AnimData_Sprint& SprintData = GetMovementFragment_Sprint();
-	const FL2Mover_AnimData_Stop& StopData = GetMovementFragment_Stop();
 	if (bIsSprinting)
 	{
 		if (SprintData.IsAnimValid())
@@ -1329,7 +1224,6 @@ UAnimSequenceBase* UL2MoverAnimLayer_Locomotion::GetStopAnim() const
 UAnimSequenceBase* UL2MoverAnimLayer_Locomotion::GetPivotAnim() const
 {
 	UAnimSequence* OutSequence = nullptr;
-	const FL2Mover_AnimData_Pivot& PivotData = GetMovementFragment_Pivot();
 	if (PivotData.IsAnimValid())
 	{
 		OutSequence = PivotData.GetSequenceByDirection(CardinalDirectionFromAcceleration);
@@ -1339,9 +1233,6 @@ UAnimSequenceBase* UL2MoverAnimLayer_Locomotion::GetPivotAnim() const
 
 FVector2D UL2MoverAnimLayer_Locomotion::GetPlayRateClampStart() const
 {
-	const FL2Mover_AnimData_Start_VelocityDirection& StartData = GetMovementFragment_Start();
-	const FL2Mover_AnimData_Sprint& SprintData = GetMovementFragment_Sprint();
-
 	FVector2D Result;
 	if (bIsSprinting && SprintData.IsAnimValid())
 	{
@@ -1361,9 +1252,6 @@ FVector2D UL2MoverAnimLayer_Locomotion::GetPlayRateClampStart() const
 
 FVector2D UL2MoverAnimLayer_Locomotion::GetPlayRateClampCycle() const
 {
-	const FL2Mover_AnimData_Cycle& CycleData = GetMovementFragment_Cycle();
-	const FL2Mover_AnimData_Sprint& SprintData = GetMovementFragment_Sprint();
-
 	FVector2D Result;
 	if (bIsSprinting && SprintData.IsAnimValid())
 	{
@@ -1383,7 +1271,6 @@ FVector2D UL2MoverAnimLayer_Locomotion::GetPlayRateClampCycle() const
 
 FVector2D UL2MoverAnimLayer_Locomotion::GetPlayRateStopCycle() const
 {
-	const FL2Mover_AnimData_Stop& StopData = GetMovementFragment_Stop();
 	FVector2D Result;
 	if (StopData.IsAnimValid())
 	{
@@ -1398,8 +1285,6 @@ FVector2D UL2MoverAnimLayer_Locomotion::GetPlayRateStopCycle() const
 
 FVector2D UL2MoverAnimLayer_Locomotion::GetPlayRateClampPivot() const
 {
-	const FL2Mover_AnimData_Pivot& PivotData = GetMovementFragment_Pivot();
-	const FL2Mover_AnimData_Sprint& SprintData = GetMovementFragment_Sprint();
 	FVector2D Result;
 	if (bIsSprinting && SprintData.IsAnimValid())
 	{

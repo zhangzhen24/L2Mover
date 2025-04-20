@@ -36,7 +36,7 @@ struct FL2Mover_AnimData_Idle : public FL2Mover_AnimData
 };
 
 USTRUCT(BlueprintType)
-struct FL2Mover_AnimData_Start_LookingDirection : public FL2Mover_AnimData
+struct FL2Mover_AnimData_StartForwardFacing : public FL2Mover_AnimData
 {
 	GENERATED_BODY()
 
@@ -52,7 +52,7 @@ struct FL2Mover_AnimData_Start_LookingDirection : public FL2Mover_AnimData
 };
 
 USTRUCT(BlueprintType)
-struct FL2Mover_AnimData_Start_VelocityDirection : public FL2Mover_AnimData
+struct FL2Mover_AnimData_Start : public FL2Mover_AnimData
 {
 	GENERATED_BODY()
 
@@ -150,20 +150,20 @@ struct FL2Mover_AnimData_Jump : public FL2Mover_AnimData
 	TObjectPtr<UAnimSequence> Jump_Start;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover")
+	TObjectPtr<UAnimSequence> Jump_StartLoop;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover")
 	TObjectPtr<UAnimSequence> Jump_Apex;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover")
+	TObjectPtr<UAnimSequence> Jump_FallLoop;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover")
 	TObjectPtr<UAnimSequence> Jump_FallLand;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover")
 	TObjectPtr<UAnimSequence> Jump_RecoveryAdditive;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover")
-	TObjectPtr<UAnimSequence> Jump_StartLoop;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover")
-	TObjectPtr<UAnimSequence> Jump_FallLoop;
-
+	
 	//跳跃距离曲线
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "L2Mover")
 	FName JumpDistanceCurveName;

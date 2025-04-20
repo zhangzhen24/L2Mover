@@ -3,11 +3,28 @@
 
 #include "L2MoverGameplayTags.h"
 
-
-namespace L2MoverLocomotionMode
+namespace L2MoverAnimLayer
 {
-	UE_DEFINE_GAMEPLAY_TAG(Grounded, FName{TEXTVIEW("L2Mover.LocomotionMode.Grounded")})
-	UE_DEFINE_GAMEPLAY_TAG(InAir, FName{TEXTVIEW("L2Mover.LocomotionMode.InAir")})
+	UE_DEFINE_GAMEPLAY_TAG(Locomotion, FName{TEXTVIEW("L2Mover.AnimLayer.Locomotion")})
+	UE_DEFINE_GAMEPLAY_TAG(Overlay, FName{TEXTVIEW("L2Mover.AnimLayer.Overlay")})
+	UE_DEFINE_GAMEPLAY_TAG(Extended, FName{TEXTVIEW("L2Mover.AnimLayer.Extended")})
+	UE_DEFINE_GAMEPLAY_TAG(View, FName{TEXTVIEW("L2Mover.AnimLayer.View")})
+	UE_DEFINE_GAMEPLAY_TAG(RagDoll, FName{TEXTVIEW("L2Mover.AnimLayer.RagDoll")})
+	//...
+}
+
+namespace L2MoverStance
+{
+	UE_DEFINE_GAMEPLAY_TAG(Standing, FName{TEXTVIEW("L2Mover.Stance.Standing")})
+	UE_DEFINE_GAMEPLAY_TAG(Crouching, FName{TEXTVIEW("L2Mover.Stance.Crouching")})
+}
+
+namespace L2MoverMovementMode
+{
+	UE_DEFINE_GAMEPLAY_TAG(Grounded, FName{TEXTVIEW("L2Mover.MovementMode.Grounded")})
+	UE_DEFINE_GAMEPLAY_TAG(InAir, FName{TEXTVIEW("L2Mover.MovementMode.InAir")})
+	UE_DEFINE_GAMEPLAY_TAG(Flying, FName{TEXTVIEW("L2Mover.MovementMode.Flying")})
+	UE_DEFINE_GAMEPLAY_TAG(Swimming, FName{TEXTVIEW("L2Mover.MovementMode.Swimming")})
 }
 
 namespace L2MoverRotationMode
@@ -29,4 +46,9 @@ namespace L2MoverExtendedPose
 	UE_DEFINE_GAMEPLAY_TAG(Blocked, FName{TEXTVIEW("L2Mover.ExtendedPose.Blocked")})
 	UE_DEFINE_GAMEPLAY_TAG(Aiming, FName{TEXTVIEW("L2Mover.ExtendedPose.Aiming")})
 	UE_DEFINE_GAMEPLAY_TAG(Custom, FName{TEXTVIEW("L2Mover.ExtendedPose.Custom")})
+}
+
+namespace L2MoverMovementDefinitionTag
+{
+	UE_DEFINE_GAMEPLAY_TAG(Unarmed, FName{TEXTVIEW("L2Mover.MovementDefinition.Unarmed")})
 }

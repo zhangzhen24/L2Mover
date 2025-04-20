@@ -30,17 +30,13 @@ struct FCharacterGroundInfo
 	float GroundDistance;
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FL2Mover_OnUpdateGait, const FGameplayTag&, Gait);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FL2Mover_OnGaitChanged, const FGameplayTag&, Gait);
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FL2Mover_OnUpdateRotationMode, const FGameplayTag&, RotationMode);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FL2Mover_OnRotationModeChanged, const FGameplayTag&, RotationMode);
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FL2Mover_OnUpdateAccelerationChanged, const bool, HasAcceleration,
-                                             const double, LastVelocityDirection);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FL2Mover_OnUAccelerationChanged, const bool, HasAcceleration, const double, LastVelocityDirection);
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FL2Mover_OnUpdateMovementDefinition, UL2MovementDefinition *,
-                                            InMovementDefinition);
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FL2Mover_OnUpdateRootYawOffsetStatus, const bool, Disable);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FL2Mover_OnMovementDefinition, UL2MovementDefinition*, InMovementDefinition);
 
 /**
  * L2Mover运动系统的核心组件，通过该组件可以控制角色的运动状态
@@ -54,19 +50,16 @@ class L2MOVER_API UL2MoverComponent : public UPawnComponent
 
 protected:
 	UPROPERTY(BlueprintAssignable, Category = "L2Mover")
-	FL2Mover_OnUpdateGait OnUpdateGait;
+	FL2Mover_OnGaitChanged OnGaltChangedDalegate;
 
 	UPROPERTY(BlueprintAssignable, Category = "L2Mover")
-	FL2Mover_OnUpdateRotationMode OnUpdateRotationMode;
+	FL2Mover_OnRotationModeChanged OnRotationModeChangedDalegate;
 
 	UPROPERTY(BlueprintAssignable, Category = "L2Mover")
-	FL2Mover_OnUpdateAccelerationChanged OnUpdateAccelerationChanged;
+	FL2Mover_OnUAccelerationChanged OnAccelerationChangedDelegate;
 
 	UPROPERTY(BlueprintAssignable, Category = "L2Mover")
-	FL2Mover_OnUpdateMovementDefinition OnUpdateMovementDefinition;
-
-	UPROPERTY(BlueprintAssignable, Category = "L2Mover")
-	FL2Mover_OnUpdateRootYawOffsetStatus OnUpdateRootYawOffsetStatus;
+	FL2Mover_OnMovementDefinition OnMovementDefinitionChangedDalegate;
 
 public:
 	UL2MoverComponent(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
@@ -93,7 +86,7 @@ public:
 
 	FORCEINLINE bool IsAiming() const;
 
-	FORCEINLINE FGameplayTag GetMovementState() const;
+	FORCEINLINE FGameplayTag GetMovementDefinitionTag() const;
 
 	FORCEINLINE FGameplayTag GetGait() const;
 
@@ -102,7 +95,7 @@ public:
 	const FCharacterGroundInfo& GetGroundInfo();
 
 	UFUNCTION(BlueprintCallable, Category = "L2Mover")
-	void SetCurrentMovementDefinition(UL2MovementDefinition* InMovementDefinition);
+	void SetCurrentMovementDefinition(const FGameplayTag InMovementDefinitionTag);
 
 	UFUNCTION(BlueprintCallable, Category = "L2Mover")
 	void SetGait(FGameplayTag InGait);
@@ -114,17 +107,17 @@ public:
 	void SetSprinting(bool bInIsSprinting);
 
 protected:
+	// 运动定义Tag
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover")
+	FGameplayTag MovementDefinitionTag{L2MoverMovementDefinitionTag::Unarmed};
+
 	// 运动集
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover", meta=(DisplayName="Movement Definitions"))
 	TArray<TSoftObjectPtr<const UL2MovementDefinition>> MovementDefinitions;
 
 	// 当前激活的运动定义
 	UPROPERTY(BlueprintReadOnly, Category = "L2Mover")
-	TObjectPtr<UL2MovementDefinition> ActivatedMovementDefinition;
-
-	// 运动状态
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover")
-	FGameplayTag MovementState{FGameplayTag::EmptyTag};
+	TObjectPtr<UL2MovementDefinition> CurrentMovementDefinition;
 
 	// 期望的步态
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover")
@@ -211,11 +204,17 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "L2Mover")
 	void RefreshJumpingSettings() const;
 
+	UFUNCTION(BlueprintCallable, Category = "L2Mover")
+	void RefreshMovementDefinition(UL2MovementDefinition* InMovementDefinition);
+
 	UFUNCTION()
 	void OnLanded(const FHitResult& Hit);
 
 	UFUNCTION()
 	void OnGaitChanged(const FGameplayTag& InGait);
+	
+	UFUNCTION()
+	void OnMovementDefinitionChanged(UL2MovementDefinition* InMovementDefinition);
 
 private:
 	uint8 bInitialized : 1 {false};
