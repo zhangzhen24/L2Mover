@@ -71,12 +71,6 @@ void UL2MoverAnimLayer_Locomotion::NativeThreadSafeUpdateAnimation(float DeltaSe
 		return;
 	}
 
-	if (!IsValid(OwnerMesh))
-	{
-		OwnerMesh = OwnerCharacter->GetMesh();
-		return;
-	}
-
 	if (!IsValid(OwnerCharacterMovement))
 	{
 		OwnerCharacterMovement = OwnerCharacter->GetCharacterMovement();
@@ -89,10 +83,35 @@ void UL2MoverAnimLayer_Locomotion::NativeThreadSafeUpdateAnimation(float DeltaSe
 		return;
 	}
 
+	if (!IsValid(OwnerMesh))
+	{
+		OwnerMesh = OwnerCharacter->GetMesh();
+		return;
+	}
+
 
 	//Character State
-	Gait = L2MoverComponent->GetGait();
-	RotationMode = L2MoverComponent->GetRotationMode();
+	const FGameplayTag& NewGait = L2MoverComponent->GetGait();
+	if (Gait != NewGait)
+	{
+		Gait = NewGait;
+		bGaitChanged = true;
+	}
+	else
+	{
+		bGaitChanged = false;
+	}
+
+	const FGameplayTag& NewRotationMode = L2MoverComponent->GetRotationMode();
+	if (RotationMode != NewRotationMode)
+	{
+		RotationMode = NewRotationMode;
+		bRotationModeChanged = true;
+	}
+	else
+	{
+		bRotationModeChanged = false;
+	}
 	bEnableRootYawOffset = RotationMode == L2MoverRotationMode::LookingDirection;
 
 	UpdateLocationData(DeltaSeconds);
@@ -137,9 +156,9 @@ void UL2MoverAnimLayer_Locomotion::Initialization()
 			return;
 		}
 
-		L2MoverComponent->OnMovementDefinitionChangedDalegate.AddUniqueDynamic(this, &ThisClass::OnMovementDefinitionChanged);
-		L2MoverComponent->OnRotationModeChangedDalegate.AddUniqueDynamic(this, &ThisClass::OnRotationModeChanged);
-		L2MoverComponent->OnGaltChangedDalegate.AddUniqueDynamic(this, &ThisClass::OnGaitChanged);
+		L2MoverComponent->OnMovementDefinitionChangedDelegate.AddUniqueDynamic(this, &ThisClass::OnMovementDefinitionChanged);
+		L2MoverComponent->OnRotationModeChangedDelegate.AddUniqueDynamic(this, &ThisClass::OnRotationModeChanged);
+		L2MoverComponent->OnGaitChangedDelegate.AddUniqueDynamic(this, &ThisClass::OnGaitChanged);
 		L2MoverComponent->OnAccelerationChangedDelegate.AddUniqueDynamic(this, &ThisClass::OnAccelerationChanged);
 		OwnerCharacter->MovementModeChangedDelegate.AddUniqueDynamic(this, &ThisClass::OnMovementModeChanged);
 		OnAccelerationChanged(bHasAcceleration, LocalVelocityDirectionAngleWithOffset);

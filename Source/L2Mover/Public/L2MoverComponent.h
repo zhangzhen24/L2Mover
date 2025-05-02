@@ -50,16 +50,16 @@ class L2MOVER_API UL2MoverComponent : public UPawnComponent
 
 protected:
 	UPROPERTY(BlueprintAssignable, Category = "L2Mover")
-	FL2Mover_OnGaitChanged OnGaltChangedDalegate;
+	FL2Mover_OnGaitChanged OnGaitChangedDelegate;
 
 	UPROPERTY(BlueprintAssignable, Category = "L2Mover")
-	FL2Mover_OnRotationModeChanged OnRotationModeChangedDalegate;
+	FL2Mover_OnRotationModeChanged OnRotationModeChangedDelegate;
 
 	UPROPERTY(BlueprintAssignable, Category = "L2Mover")
 	FL2Mover_OnUAccelerationChanged OnAccelerationChangedDelegate;
 
 	UPROPERTY(BlueprintAssignable, Category = "L2Mover")
-	FL2Mover_OnMovementDefinition OnMovementDefinitionChangedDalegate;
+	FL2Mover_OnMovementDefinition OnMovementDefinitionChangedDelegate;
 
 public:
 	UL2MoverComponent(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
@@ -106,6 +106,30 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "L2Mover")
 	void SetSprinting(bool bInIsSprinting);
 
+	UFUNCTION(BlueprintCallable, Category = "L2Mover")
+	void RefreshLocomotionData(float DeltaTime);
+
+	UFUNCTION(BlueprintCallable, Category = "L2Mover")
+	void RefreshGait(float DeltaTime);
+
+	UFUNCTION(BlueprintCallable, Category = "L2Mover")
+	void RefreshRotationMode(float DeltaTime);
+
+	UFUNCTION(BlueprintCallable, Category = "L2Mover")
+	void RefreshOrientRotationToMovement() const;
+
+	UFUNCTION(BlueprintCallable, Category = "L2Mover")
+	void RefreshGaitSpeedToMovement() const;
+
+	UFUNCTION(BlueprintCallable, Category = "L2Mover")
+	void RefreshJumpingSettings() const;
+
+	UFUNCTION(BlueprintCallable, Category = "L2Mover")
+	void RefreshMovementDefinition(UL2MovementDefinition* InMovementDefinition);
+
+	UFUNCTION(BlueprintCallable, Category = "L2Mover")
+	void RefreshAnimGraphSettings() const;
+
 protected:
 	// 运动定义Tag
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover")
@@ -126,6 +150,10 @@ protected:
 	// 当前步态
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "L2Mover")
 	FGameplayTag Gait{FGameplayTag::EmptyTag};
+
+	// 以前的步态
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "L2Mover")
+	FGameplayTag PreviousGait{FGameplayTag::EmptyTag};
 
 	// 期望的旋转模式
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "L2Mover")
@@ -186,33 +214,12 @@ protected:
 	UFUNCTION()
 	void InitializeMovement();
 
-	UFUNCTION(BlueprintCallable, Category = "L2Mover")
-	void RefreshLocomotionData(float DeltaTime);
-
-	UFUNCTION(BlueprintCallable, Category = "L2Mover")
-	void RefreshGait(float DeltaTime);
-
-	UFUNCTION(BlueprintCallable, Category = "L2Mover")
-	void RefreshRotationMode(float DeltaTime);
-
-	UFUNCTION(BlueprintCallable, Category = "L2Mover")
-	void RefreshOrientRotationToMovement() const;
-
-	UFUNCTION(BlueprintCallable, Category = "L2Mover")
-	void RefreshGaitSpeedToMovement() const;
-
-	UFUNCTION(BlueprintCallable, Category = "L2Mover")
-	void RefreshJumpingSettings() const;
-
-	UFUNCTION(BlueprintCallable, Category = "L2Mover")
-	void RefreshMovementDefinition(UL2MovementDefinition* InMovementDefinition);
-
 	UFUNCTION()
 	void OnLanded(const FHitResult& Hit);
 
 	UFUNCTION()
 	void OnGaitChanged(const FGameplayTag& InGait);
-	
+
 	UFUNCTION()
 	void OnMovementDefinitionChanged(UL2MovementDefinition* InMovementDefinition);
 

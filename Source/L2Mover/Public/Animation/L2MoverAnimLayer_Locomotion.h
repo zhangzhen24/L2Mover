@@ -107,6 +107,9 @@ protected:
 	FGameplayTag Gait = L2MoverGait::Running;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe))
+	bool bGaitChanged = false;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe))
 	FGameplayTag RotationMode = L2MoverRotationMode::VelocityDirection;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BlueprintThreadSafe))

@@ -5,11 +5,13 @@
 #include "L2MovementDefinition.h"
 #include "LogL2Mover.h"
 #include "Components/CapsuleComponent.h"
+#include "Engine/AssetManager.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Settings/L2MoverInAirSettings.h"
+#include "Utils/L2MoverUtility.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(L2MoverComponent)
 
@@ -33,7 +35,7 @@ void UL2MoverComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ThisClass::InitializeMovement);
+	InitializeMovement();
 }
 
 void UL2MoverComponent::TickComponent(float DeltaTime, ELevelTick TickType,
@@ -71,9 +73,9 @@ void UL2MoverComponent::InitializeMovement()
 
 	OwnerCharacter->LandedDelegate.AddUniqueDynamic(this, &ThisClass::OnLanded);
 
-	OnGaltChangedDalegate.AddDynamic(this, &ThisClass::OnGaitChanged);
+	OnGaitChangedDelegate.AddDynamic(this, &ThisClass::OnGaitChanged);
 
-	OnMovementDefinitionChangedDalegate.AddDynamic(this, &ThisClass::OnMovementDefinitionChanged);
+	OnMovementDefinitionChangedDelegate.AddDynamic(this, &ThisClass::OnMovementDefinitionChanged);
 
 	// 设置MovementDefinition
 	SetCurrentMovementDefinition(MovementDefinitionTag);
@@ -128,8 +130,9 @@ void UL2MoverComponent::RefreshGait(float DeltaTime)
 {
 	if (DesiredGait != Gait)
 	{
+		PreviousGait = Gait;
 		Gait = DesiredGait;
-		OnGaltChangedDalegate.Broadcast(Gait);
+		OnGaitChangedDelegate.Broadcast(Gait);
 	}
 }
 
@@ -139,7 +142,7 @@ void UL2MoverComponent::RefreshRotationMode(float DeltaTime)
 	{
 		RotationMode = DesiredRotationMode;
 		RotationMode = IsAiming() ? L2MoverRotationMode::LookingDirection : DesiredRotationMode;
-		OnRotationModeChangedDalegate.Broadcast(RotationMode);
+		OnRotationModeChangedDelegate.Broadcast(RotationMode);
 
 		RefreshOrientRotationToMovement();
 	}
@@ -355,6 +358,39 @@ void UL2MoverComponent::RefreshMovementDefinition(UL2MovementDefinition* InMovem
 	if (InMovementDefinition != CurrentMovementDefinition)
 	{
 		CurrentMovementDefinition = InMovementDefinition;
-		OnMovementDefinitionChangedDalegate.Broadcast(CurrentMovementDefinition);
+		OnMovementDefinitionChangedDelegate.Broadcast(CurrentMovementDefinition);
+	}
+}
+
+void UL2MoverComponent::RefreshAnimGraphSettings() const
+{
+	if (OwnerCharacter && IsValid(CurrentMovementDefinition))
+	{
+		if (USkeletalMeshComponent* MainMesh = UL2MoverUtility::GetMainMesh(OwnerCharacter))
+		{
+			for (auto [AnimLayerName, AnimInstanceLayerClass] : CurrentMovementDefinition->AnimGraphSettings.AnimLinkedLayers)
+			{
+				if (AnimInstanceLayerClass == nullptr)
+				{
+					continue;
+				}
+
+				UAssetManager::Get().GetStreamableManager().RequestAsyncLoad(AnimInstanceLayerClass.ToSoftObjectPath(),
+				                                                             FStreamableDelegate::CreateLambda([MainMesh, AnimInstanceLayerClass, AnimLayerName]()
+				                                                             {
+					                                                             if (UClass* Class = AnimInstanceLayerClass.LoadSynchronous())
+					                                                             {
+						                                                             MainMesh->LinkAnimClassLayers(Class);
+						                                                             LOG_L2MOVER_NO_UCLASS_ARGS(Warning, "Linked AnimLayer: %s", *AnimLayerName.ToString());
+					                                                             }
+					                                                             else
+					                                                             {
+						                                                             LOG_L2MOVER_NO_UCLASS_ARGS(
+							                                                             Error, "Load AnimLayer Failed: %s, Path: %s", *AnimLayerName.ToString(),
+							                                                             *AnimInstanceLayerClass.ToString());
+					                                                             }
+				                                                             }));
+			}
+		}
 	}
 }

@@ -2,6 +2,9 @@
 
 
 #include "Utils/L2MoverUtility.h"
+
+#include "GameFramework/Character.h"
+#include "Interfaces/L2MoverDefaultInterface.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Types/L2MoverMovementEnums.h"
 
@@ -73,7 +76,22 @@ EL2MovementDirection UL2MoverUtility::GetOppositeCardinalDirection(const EL2Move
 	return Result;
 }
 
-bool UL2MoverUtility::IsSafeValid(const UObject* WorldContextObject)
+USkeletalMeshComponent* UL2MoverUtility::GetMainMesh(AActor* OwnerActor)
 {
-	return IsValid(WorldContextObject);
+	if (!OwnerActor)
+	{
+		return nullptr;
+	}
+
+	if (const IL2MoverDefaultInterface* DefaultInterface = Cast<IL2MoverDefaultInterface>(OwnerActor))
+	{
+		return DefaultInterface->Execute_GetMainMesh(OwnerActor);
+	}
+
+	if (const ACharacter* Character = Cast<ACharacter>(OwnerActor))
+	{
+		return Character->GetMesh();
+	}
+
+	return nullptr;
 }
